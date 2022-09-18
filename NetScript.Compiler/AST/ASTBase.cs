@@ -101,7 +101,7 @@ namespace NetScript.Compiler.AST
 
         public override string ToString()
         {
-            return $"break{(Value is not ConstantAST con || con.Obj is not null ? Value.ToString() : string.Empty)}";
+            return $"break {(Value is not ConstantAST con || con.Obj is not null ? Value.ToString() : string.Empty)}";
         }
     }
 
