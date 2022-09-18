@@ -23,6 +23,7 @@ namespace NetScript.Compiler
         public Dictionary<string, Type> Imports { get; }
         public Dictionary<string, Type> AvariableImports { get; }
         public List<Assembly> Assemblies { get; }
+        public ushort CurrentCodeSector { get; private set; }
 
         public CompilerArgs()
         {
@@ -53,7 +54,8 @@ namespace NetScript.Compiler
 
                 [nameof(Console)] = typeof(Console),
                 [nameof(Math)] = typeof(Math),
-                [nameof(Core.Range)] = typeof(Core.Range),
+                [nameof(Interpreter.Range)] = typeof(Interpreter.Range),
+                [nameof(Interpreter.Function)] = typeof(Interpreter.Function),
             };
 
             LoadAssemblies();
@@ -164,5 +166,8 @@ namespace NetScript.Compiler
                 AvariableImports.Add(name, t);
             }
         }
+
+        public ushort NextCodeSector() =>
+            CurrentCodeSector++;
     }
 }

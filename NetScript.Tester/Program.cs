@@ -14,8 +14,6 @@ namespace NetScript.Tester
         static void Main(string[] args)
         {
             TestBytecode();
-
-            new System.Dynamic.ExpandoObject();
         }
 
         private static object ReadConst(BinaryReader reader)
@@ -46,7 +44,7 @@ namespace NetScript.Tester
             NetScriptCompiler comp = new();
             MemoryStream memory = new();
             ASTBase[] asts = comp.GetASTs(Lexer.LexString(File.ReadAllText(@"D:\test.ns"), comp.Expressions));
-            Console.WriteLine(string.Join("; ", asts as object[]) + "\n\n");
+            Console.WriteLine(string.Join(";\n", asts as object[]) + "\n\n");
             comp.Compile(File.ReadAllText(@"D:\test.ns"), memory);
             memory.Position = 0;
             BinaryReader reader = new(memory);

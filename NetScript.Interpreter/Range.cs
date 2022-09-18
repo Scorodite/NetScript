@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NetScript.Core
+namespace NetScript.Interpreter
 {
     public class Range : IEnumerable<int>
     {

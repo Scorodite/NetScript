@@ -22,8 +22,8 @@ namespace NetScript.Compiler.AST
 
         protected void CompileAB(Bytecode bc, BinaryWriter writer, CompilerArgs args)
         {
-            A.Compile(writer, args);
-            B.Compile(writer, args);
+            A.ReturnOnly().Compile(writer, args);
+            B.ReturnOnly().Compile(writer, args);
             writer.Write(bc);
         }
     }
@@ -75,10 +75,10 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            A.Compile(writer, args);
+            A.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.And);
             SizePosition sizePos = new(writer);
-            B.Compile(writer, args);
+            B.ReturnOnly().Compile(writer, args);
             sizePos.SaveSize();
         }
     }
@@ -105,10 +105,10 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            A.Compile(writer, args);
+            A.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.NullCoalescing);
             SizePosition sizePos = new(writer);
-            B.Compile(writer, args);
+            B.ReturnOnly().Compile(writer, args);
             sizePos.SaveSize();
         }
     }
@@ -199,8 +199,8 @@ namespace NetScript.Compiler.AST
         public override string ToString() => $"({A} is {B})";
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            A.Compile(writer, args);
-            B.Compile(writer, args);
+            A.ReturnOnly().Compile(writer, args);
+            B.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.IsType);
             writer.Write(Bytecode.Not);
         }

@@ -49,6 +49,8 @@ namespace NetScript.Core
         
         Rev, BinRev, Not, GetTypeObj, Default,
 
+        CreateList, CreateArray,
+
         ConstByte, ConstSbyte, ConstShort, ConstUShort, ConstInt, ConstUInt,
         ConstLong, ConstULong, ConstFloat, ConstDecimal, ConstDouble,
         ConstChar, ConstString

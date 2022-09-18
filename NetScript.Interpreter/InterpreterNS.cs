@@ -108,8 +108,11 @@ namespace NetScript.Interpreter
                             {
                                 t = obj.GetType();
                             }
-
-                            if (t.GetField(name) is FieldInfo field && field.IsStatic == obj is null)
+                            if (obj is ExpandoObject expando)
+                            {
+                                p.Stack.Push(((IDictionary<string, object>)obj)[name]);
+                            }
+                            else if (t.GetField(name) is FieldInfo field && field.IsStatic == obj is null)
                             {
                                 p.Stack.Push(field.GetValue(obj));
                             }
@@ -118,9 +121,10 @@ namespace NetScript.Interpreter
                             {
                                 p.Stack.Push(prop.GetValue(obj));
                             }
-                            else if (obj is ExpandoObject expando)
+                            else if (t.GetEvent(name) is EventInfo ev && ev.RaiseMethod is not null &&
+                                ev.RaiseMethod.IsStatic == obj is null)
                             {
-                                p.Stack.Push(((IDictionary<string, object>)obj)[name]);
+                                p.Stack.Push(new EventWithObject(obj, ev));
                             }
                             else if (t.GetMethods().ToList().FindAll(f => f.Name == name && f.IsStatic == obj is null) is List<MethodInfo> methods &&
                                      methods.Count > 0)
@@ -148,8 +152,11 @@ namespace NetScript.Interpreter
                             {
                                 t = obj.GetType();
                             }
-
-                            if (t.GetField(name) is FieldInfo field && field.IsStatic == obj is null)
+                            if (obj is ExpandoObject expando)
+                            {
+                                ((IDictionary<string, object>)obj)[name] = val;
+                            }
+                            else if (t.GetField(name) is FieldInfo field && field.IsStatic == obj is null)
                             {
                                 field.SetValue(obj, val);
                             }
@@ -158,13 +165,14 @@ namespace NetScript.Interpreter
                             {
                                 prop.SetValue(obj, val);
                             }
-                            else if (obj is ExpandoObject expando)
+                            else if (t.GetEvent(name) is EventInfo ev && ev.AddMethod is not null &&
+                                ev.RaiseMethod.IsStatic == obj is null)
                             {
-                                ((IDictionary<string, object>)obj)[name] = val;
+                                ev.AddMethod.Invoke(obj, new object[] { val });
                             }
                             else
                             {
-                                throw new Exception($"Can not find field {name} at {t.FullName}");
+                                throw new Exception($"Can not find field {name} at {t.FullName} to set");
                             }
                             p.Stack.Push(obj);
                         }
@@ -248,14 +256,21 @@ namespace NetScript.Interpreter
                                 case MethodWithObject mwo:
                                     p.Stack.Push(mwo.Invoke(args));
                                     break;
+                                case EventWithObject ewo:
+                                    p.Stack.Push(ewo.Invoke(args));
+                                    break;
+                                case Delegate deleg:
+                                    p.Stack.Push(deleg.DynamicInvoke(args));
+                                    break;
                                 case Function func:
-                                    if (func.GetContext(args, null) is Context context)
+                                    FunctionResult fres = func.GetResult(args, null);
+                                    if (fres.IsContext)
                                     {
-                                        p.Add(context);
+                                        p.Add(fres.Value as Context);
                                     }
                                     else
                                     {
-                                        p.Stack.Push(null);
+                                        p.Stack.Push(fres.Value);
                                     }
                                     break;
                                 default:
@@ -423,15 +438,25 @@ namespace NetScript.Interpreter
                             {
                                 generics[i] = p.Names[p.Reader.ReadInt32()];
                             }
+
                             string[] args = new string[p.Reader.ReadInt32()];
                             for (int i = 0; i < args.Length; i++)
                             {
                                 args[i] = p.Names[p.Reader.ReadInt32()];
                             }
 
+                            int codeSectorID = p.Reader.ReadUInt16();
                             int size = p.Reader.ReadInt32();
-                            byte[] funcBc = new byte[size];
-                            p.Stream.Read(funcBc);
+                            if (p.CodeSectors.TryGetValue(codeSectorID, out var funcBc))
+                            {
+                                p.Stream.Position += size;
+                            }
+                            else
+                            {
+                                funcBc = new byte[size];
+                                p.Stream.Read(funcBc);
+                                p.CodeSectors.Add(codeSectorID, funcBc);
+                            }
                             p.Stack.Push(new CustomFunction(generics, args, funcBc, p, p.Variables));
                         }
                         break;
@@ -460,6 +485,56 @@ namespace NetScript.Interpreter
                             object obj = p.Stack.Pop();
                             p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + size);
                             p.Current.Return = obj;
+                        }
+                        break;
+                    case Bytecode.CreateList:
+                        {
+                            int count = p.Reader.ReadInt16();
+                            object typeUndef = p.Stack.Pop();
+                            if (typeUndef is not Type type)
+                            {
+                                throw new ArgumentException($"List must recieve System.Type, not {typeUndef?.GetType() ?? typeof(void)}");
+                            }
+
+                            Array list = Array.CreateInstance(type, count);
+                            for (int i = list.Length - 1; i >= 0; i--)
+                            {
+                                object item = p.Stack.Pop();
+                                if (item.GetType() == type || item.GetType().IsSubclassOf(type) || item is null && !type.IsValueType)
+                                {
+                                    list.SetValue(item, i);
+                                }
+                                else
+                                {
+                                    throw new Exception($"Tried to create list of type {type} with {item} ({item?.GetType() ?? typeof(void)})");
+                                }
+                            }
+                            p.Stack.Push(Activator.CreateInstance(typeof(List<>).MakeGenericType(type), new object[] { list }));
+                        }
+                        break;
+                    case Bytecode.CreateArray:
+                        {
+                            int count = p.Reader.ReadInt16();
+                            object typeUndef = p.Stack.Pop();
+                            if (typeUndef is not Type type)
+                            {
+                                throw new ArgumentException($"Array must recieve System.Type, not {typeUndef?.GetType() ?? typeof(void)}");
+                            }
+
+                            Array array = Array.CreateInstance(type, count);
+                            for (int i = array.Length - 1; i >= 0; i--)
+                            {
+                                object item = p.Stack.Pop();
+                                if (item.GetType() == type || item.GetType().IsSubclassOf(type) || item is null && !type.IsValueType)
+                                {
+                                    array.SetValue(item, i);
+                                }
+                                else
+                                {
+                                    throw new Exception($"Tried to create array of type {type} with {item} ({item?.GetType() ?? typeof(void)})");
+                                }
+                            }
+                            p.Stack.Push(array);
                         }
                         break;
                     case Bytecode.AddSubcontext:

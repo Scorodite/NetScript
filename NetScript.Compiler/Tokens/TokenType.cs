@@ -23,7 +23,7 @@ namespace NetScript.Compiler.Tokens
         OpeningGroup, ClosingGroup,
         OpeningIndex, ClosingIndex,
         OpeningGeneric, ClosingGeneric,
-        EOL, Skip, Name, Sep,
+        EOL, Skip, Name, Sep, Clarification,
         NewVariable,
         LoadDll,
         Try,

@@ -14,7 +14,7 @@ namespace NetScript.Compiler.AST
 
         protected void CompileA(Bytecode bc, BinaryWriter writer, CompilerArgs args)
         {
-            A.Compile(writer, args);
+            A.ReturnOnly().Compile(writer, args);
             writer.Write(bc);
         }
     }

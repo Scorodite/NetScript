@@ -27,6 +27,7 @@ namespace NetScript.Interpreter
 
         public string[] Names { get; private set; }
         public object[] Constants { get; private set; }
+        public Dictionary<int, byte[]> CodeSectors { get; private set; }
 
         private List<Context> Content { get; set; }
 
@@ -93,6 +94,7 @@ namespace NetScript.Interpreter
         public Runtime(Stream root)
         {
             Content = new() { new(root) };
+            CodeSectors = new();
 
             Names = new string[Reader.ReadInt32()];
             for (int i = 0; i < Names.Length; i++)
@@ -259,6 +261,7 @@ namespace NetScript.Interpreter
                 Names = Names,
                 Constants = Constants,
                 Content = new(),
+                CodeSectors = CodeSectors
             };
         }
 

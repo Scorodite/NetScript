@@ -89,6 +89,7 @@ namespace NetScript.Compiler
             Expressions.Add((new(@"="), TokenType.Assign));
             Expressions.Add((new(@"\."), TokenType.Field));
             Expressions.Add((new(@","), TokenType.Sep));
+            Expressions.Add((new(@":"), TokenType.Clarification));
             Expressions.Add((new(@"import\s+\w+((\.\w+)*\.\*|(\.\w+)+(`\d+)?)"), TokenType.Import));
             Expressions.Add((new(@"var\b"), TokenType.NewVariable));
             Expressions.Add((new(@"func\b"), TokenType.Function));
@@ -136,6 +137,8 @@ namespace NetScript.Compiler
             Rules.Add(new ReturnRule());
             Rules.Add(new BreakRule());
             Rules.Add(new OutputRule());
+            Rules.Add(new ArrayRule());
+            Rules.Add(new ListRule());
             Rules.Add(new InvokeRule());
             Rules.Add(new GetIndexRule());
             Rules.Add(new GenericRule());
@@ -229,11 +232,7 @@ namespace NetScript.Compiler
             ASTBase[] asts = GetASTs(tokens);
             CompilerArgs args = new();
 
-            foreach (ASTBase ast in asts)
-            {
-                ast.Compile(writer, args);
-                writer.Write(Bytecode.ClearStack);
-            }
+            CompileAll(asts, writer, args);
 
             BinaryWriter outWriter = new(output);
 

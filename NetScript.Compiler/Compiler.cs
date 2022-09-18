@@ -122,7 +122,10 @@ namespace NetScript.Compiler
             foreach (ASTBase ast in asts)
             {
                 ast.Compile(writer, args);
-                writer.Write(Bytecode.ClearStack);
+                if (ast.ReturnsValue)
+                {
+                    writer.Write(Bytecode.ClearStack);
+                }
             }
         }
     }

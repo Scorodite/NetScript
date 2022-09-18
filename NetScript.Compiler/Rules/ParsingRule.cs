@@ -3,8 +3,6 @@ using NetScript.Compiler.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NetScript.Compiler.Rules
 {
@@ -196,34 +194,39 @@ namespace NetScript.Compiler.Rules
             return tokens.Last().Type == CloseArgs && compiler.FindTokenRev(tokens, OpenArgs, tokens.Count - 2) == 0;
         }
 
-        public ASTBase[] GetArgs(List<Token> tokens, Compiler compiler)
+        public (ASTBase, ASTBase[]) GetTypeAndItems(List<Token> tokens, Compiler compiler)
         {
-            if (tokens.Count <= 2)
+            int clarPos = compiler.FindToken(tokens, TokenType.Clarification, 1, tokens.Count - 1);
+            ASTBase type;
+            if (clarPos > 0)
             {
-                return Array.Empty<ASTBase>();
+                type = compiler.GetAST(tokens.GetRange(1, clarPos - 1));
             }
             else
             {
-                int lastSep = 0;
-                List<ASTBase> args = new();
-                for (;;)
+                clarPos = 0;
+                type = null;
+            }
+
+            int lastSep = clarPos;
+            List<ASTBase> args = new();
+            for (;;)
+            {
+                int sepPos = compiler.FindToken(tokens, SepArgs, lastSep + 1, tokens.Count - 1);
+                if (sepPos >= 0)
                 {
-                    int sepPos = compiler.FindToken(tokens, SepArgs, lastSep + 1, tokens.Count - 1);
-                    if (sepPos >= 0)
-                    {
-                        args.Add(compiler.GetAST(tokens.GetRange(lastSep + 1, sepPos - lastSep - 1)));
-                    }
-                    else
-                    {
-                        List<Token> arg = tokens.GetRange(lastSep + 1, tokens.Count - lastSep - 2);
-                        if (arg.Count > 0)
-                        {
-                            args.Add(compiler.GetAST(arg));
-                        }
-                        return args.ToArray();
-                    }
-                    lastSep = sepPos;
+                    args.Add(compiler.GetAST(tokens.GetRange(lastSep + 1, sepPos - lastSep - 1)));
                 }
+                else
+                {
+                    List<Token> arg = tokens.GetRange(lastSep + 1, tokens.Count - lastSep - 2);
+                    if (arg.Count > 0)
+                    {
+                        args.Add(compiler.GetAST(arg));
+                    }
+                    return (type, args.ToArray());
+                }
+                lastSep = sepPos;
             }
         }
     }
@@ -546,6 +549,30 @@ namespace NetScript.Compiler.Rules
             ASTBase obj = compiler.GetAST(tokens.GetRange(0, openPos - 1));
             ASTBase[] asts = compiler.GetASTs(tokens.GetRange(openPos + 1, tokens.Count - openPos - 2));
             return new ConstructorAST(obj, asts);
+        }
+    }
+
+    public class ListRule : ListLikeRule
+    {
+        public ListRule() : base(TokenType.OpeningIndex, TokenType.ClosingIndex, TokenType.Sep) { }
+
+        public override ASTBase GetAST(List<Token> tokens, Compiler compiler)
+        {
+            (ASTBase type, ASTBase[] items) = GetTypeAndItems(tokens, compiler);
+
+            return new ListAST(type ?? new GetVariableAST("object"), items);
+        }
+    }
+
+    public class ArrayRule : ListLikeRule
+    {
+        public ArrayRule() : base(TokenType.OpeningQuote, TokenType.ClosingQuote, TokenType.Sep) { }
+
+        public override ASTBase GetAST(List<Token> tokens, Compiler compiler)
+        {
+            (ASTBase type, ASTBase[] items) = GetTypeAndItems(tokens, compiler);
+
+            return new ArrayAST(type ?? new GetVariableAST("object"), items);
         }
     }
 }

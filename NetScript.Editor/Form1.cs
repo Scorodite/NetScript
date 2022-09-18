@@ -59,7 +59,7 @@ namespace NetScript.Editor
             r.ClearStyle(Comment, String, Keyword, Error);
             r.SetStyle(Comment, @"//.*|/\*(.|\n)*?\*/", RegexOptions.Multiline);
             r.SetStyle(String, @"""(\\.|[^""\\\n])*""|'(\\.|[^'\\\n])*'");
-            r.SetStyle(Keyword, @"\b(true|false|null|is(\s+not)?|to|nameof|typeof|default|import|var|func|if|else|while|for|in|try|catch|output|return|break|continue|loop|loaddll|object|expando|string|char|bool|byte|s?byte|u?short|u?int|u?long|float|decimal|double|Console|Math|Range)\b");
+            r.SetStyle(Keyword, @"\b(true|false|null|is(\s+not)?|to|nameof|typeof|default|import|var|func|if|else|while|for|in|try|catch|output|return|break|continue|loop|loaddll|object|expando|string|char|bool|byte|s?byte|u?short|u?int|u?long|float|decimal|double|Console|Math|Range|Function(.(ToAction|ToFunc|ToDelegate))?)\b");
         }
 
         private void NewFile(object sender, EventArgs e)

@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NetScript.Core\NetScript.Core.csproj" />
+    <ProjectReference Include="..\NetScript.Interpreter\NetScript.Interpreter.csproj" />
   </ItemGroup>
 
 </Project>

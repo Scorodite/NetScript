@@ -12,6 +12,7 @@ namespace NetScript.Compiler.AST
     public abstract class ASTBase
     {
         public int Index { get; set; }
+        public virtual bool ReturnsValue => true;
 
         public abstract void Compile(BinaryWriter writer, CompilerArgs args);
 
@@ -26,6 +27,18 @@ namespace NetScript.Compiler.AST
             }
 
             return builder.ToString();
+        }
+
+        public ASTBase ReturnOnly()
+        {
+            if (ReturnsValue)
+            {
+                return this;
+            }
+            else
+            {
+                throw new CompilerException("Required statement that returns value", Index);
+            }
         }
     }
 
@@ -67,6 +80,7 @@ namespace NetScript.Compiler.AST
     public class LoadDllAST : ASTBase
     {
         public string Path { get; }
+        public override bool ReturnsValue => false;
 
         public LoadDllAST(string path)
         {
@@ -87,6 +101,7 @@ namespace NetScript.Compiler.AST
     public class BreakAST : ASTBase
     {
         public ASTBase Value { get; set; }
+        public override bool ReturnsValue => false;
 
         public BreakAST(ASTBase value)
         {
@@ -95,7 +110,7 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Value.Compile(writer, args);
+            Value.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.Break);
         }
 
@@ -108,6 +123,7 @@ namespace NetScript.Compiler.AST
     public class ReturnAST : ASTBase
     {
         public ASTBase Value { get; set; }
+        public override bool ReturnsValue => false;
 
         public ReturnAST(ASTBase value)
         {
@@ -116,7 +132,7 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Value.Compile(writer, args);
+            Value.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.Return);
         }
 
@@ -129,6 +145,7 @@ namespace NetScript.Compiler.AST
     public class OutputAST : ASTBase
     {
         public ASTBase Value { get; set; }
+        public override bool ReturnsValue => false;
 
         public OutputAST(ASTBase value)
         {
@@ -137,7 +154,7 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Value.Compile(writer, args);
+            Value.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.Output);
         }
 
@@ -150,6 +167,7 @@ namespace NetScript.Compiler.AST
     public class ContinueAST : ASTBase
     {
         public ContinueAST() { }
+        public override bool ReturnsValue => false;
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
@@ -181,7 +199,7 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Value.Compile(writer, args);
+            Value.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.NewVariable);
             writer.Write(args.GetNameID(Name));
         }
@@ -226,7 +244,7 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Value.Compile(writer, args);
+            Value.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.SetVariable);
             writer.Write(args.GetNameID(Name));
         }
@@ -240,6 +258,7 @@ namespace NetScript.Compiler.AST
     public class ImportAST : ASTBase
     {
         public string Type { get; set; }
+        public override bool ReturnsValue => false;
 
         public ImportAST(string type)
         {
@@ -309,11 +328,11 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Obj.Compile(writer, args);
+            Obj.ReturnOnly().Compile(writer, args);
 
             foreach (ASTBase arg in Args)
             {
-                arg.Compile(writer, args);
+                arg.ReturnOnly().Compile(writer, args);
             }
 
             writer.Write(Bytecode.Invoke);
@@ -339,11 +358,11 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Obj.Compile(writer, args);
+            Obj.ReturnOnly().Compile(writer, args);
 
             foreach (ASTBase arg in Args)
             {
-                arg.Compile(writer, args);
+                arg.ReturnOnly().Compile(writer, args);
             }
 
             writer.Write(Bytecode.GetIndex);
@@ -371,14 +390,14 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Obj.Compile(writer, args);
+            Obj.ReturnOnly().Compile(writer, args);
 
             foreach (ASTBase arg in Args)
             {
-                arg.Compile(writer, args);
+                arg.ReturnOnly().Compile(writer, args);
             }
 
-            Value.Compile(writer, args);
+            Value.ReturnOnly().Compile(writer, args);
 
             writer.Write(Bytecode.SetIndex);
             writer.Write((byte)Args.Length);
@@ -403,11 +422,11 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Obj.Compile(writer, args);
+            Obj.ReturnOnly().Compile(writer, args);
 
             foreach (ASTBase arg in Args)
             {
-                arg.Compile(writer, args);
+                arg.ReturnOnly().Compile(writer, args);
             }
 
             writer.Write(Bytecode.Generic);
@@ -433,7 +452,7 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Obj.Compile(writer, args);
+            Obj.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.GetField);
             writer.Write(args.GetNameID(Name));
         }
@@ -459,8 +478,8 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Obj.Compile(writer, args);
-            Value.Compile(writer, args);
+            Obj.ReturnOnly().Compile(writer, args);
+            Value.ReturnOnly().Compile(writer, args);
             writer.Write(Bytecode.SetField);
             writer.Write(args.GetNameID(Name));
         }
@@ -487,22 +506,22 @@ namespace NetScript.Compiler.AST
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
             writer.Write(Bytecode.CreateFunction);
+
             writer.Write(Generics.Length);
             foreach (string gen in Generics)
             {
                 writer.Write(args.GetNameID(gen));
             }
+
             writer.Write(Args.Length);
             foreach (string arg in Args)
             {
                 writer.Write(args.GetNameID(arg));
             }
+
+            writer.Write(args.NextCodeSector());
             SizePosition sizePos = new(writer);
-            foreach (ASTBase ast in ASTs)
-            {
-                ast.Compile(writer, args);
-                writer.Write(Bytecode.ClearStack);
-            }
+            Compiler.CompileAll(ASTs, writer, args);
             sizePos.SaveSize();
         }
 
@@ -539,7 +558,7 @@ namespace NetScript.Compiler.AST
             for (int i = 0; i < IfASTs.Length - 1; i++)
             {
                 (ASTBase[] asts, ASTBase cond) = IfASTs[i];
-                cond.Compile(writer, args);
+                cond.ReturnOnly().Compile(writer, args);
                 writer.Write(Bytecode.If);
                 trueSkips.Add(new(writer));
                 SizePosition falseSkip = new(writer);
@@ -553,7 +572,7 @@ namespace NetScript.Compiler.AST
             if (ElseASTs?.Length > 0)
             {
                 (ASTBase[] asts, ASTBase cond) = IfASTs.Last();
-                cond.Compile(writer, args);
+                cond.ReturnOnly().Compile(writer, args);
                 writer.Write(Bytecode.IfElse);
                 SizePosition trueLen = new(writer);
                 SizePosition elseLen = new(writer);
@@ -571,7 +590,7 @@ namespace NetScript.Compiler.AST
             else
             {
                 (ASTBase[] asts, ASTBase cond) = IfASTs.Last();
-                cond.Compile(writer, args);
+                cond.ReturnOnly().Compile(writer, args);
                 writer.Write(Bytecode.If);
                 trueSkips.Add(new(writer));
                 SizePosition falseSkip = new(writer);
@@ -615,11 +634,8 @@ namespace NetScript.Compiler.AST
             SizePosition sizePos = new(writer);
             new IfAST(new[] { (new ASTBase[] { new BreakAST(new ConstantAST(null)) }, new NotAST(Condition) as ASTBase) }).Compile(writer, args);
             writer.Write(Bytecode.ClearStack);
-            foreach (ASTBase ast in ASTs)
-            {
-                ast.Compile(writer, args);
-                writer.Write(Bytecode.ClearStack);
-            }
+
+            Compiler.CompileAll(ASTs, writer, args);
             sizePos.SaveSize();
 
         }
@@ -647,7 +663,7 @@ namespace NetScript.Compiler.AST
         {
             NewVariableAST enumVar = new($"__{RandomString(5)}", new InvokeAST(
                     new GetFieldAST(
-                            Enumerable,
+                            Enumerable.ReturnOnly(),
                             nameof(IEnumerable<object>.GetEnumerator)
                     )));
             NewVariableAST itemVar = new(Name, new GetFieldAST(
@@ -670,11 +686,9 @@ namespace NetScript.Compiler.AST
             writer.Write(Bytecode.ClearStack);
             itemVar.Compile(writer, args);
             writer.Write(Bytecode.ClearStack);
-            foreach (ASTBase ast in ASTs)
-            {
-                ast.Compile(writer, args);
-                writer.Write(Bytecode.ClearStack);
-            }
+
+            Compiler.CompileAll(ASTs, writer, args);
+
             sizePos.SaveSize();
         }
 
@@ -697,11 +711,7 @@ namespace NetScript.Compiler.AST
         {
             writer.Write(Bytecode.Loop);
             SizePosition sizePos = new(writer);
-            foreach (ASTBase ast in ASTs)
-            {
-                ast.Compile(writer, args);
-                writer.Write(Bytecode.ClearStack);
-            }
+            Compiler.CompileAll(ASTs, writer, args);
             sizePos.SaveSize();
         }
 
@@ -777,7 +787,7 @@ namespace NetScript.Compiler.AST
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            Obj.Compile(writer, args);
+            Obj.ReturnOnly().Compile(writer, args);
 
             writer.Write(Bytecode.Constructor);
             SizePosition size = new(writer);
@@ -816,6 +826,66 @@ namespace NetScript.Compiler.AST
             Writer.Write(size);
             Writer.BaseStream.Position = prev;
             return size;
+        }
+    }
+
+    public class ListAST : ASTBase
+    {
+        public ASTBase Type { get; set; }
+        public ASTBase[] Items { get; set; }
+
+        public ListAST(ASTBase type, ASTBase[] items)
+        {
+            Type = type;
+            Items = items;
+        }
+
+        public override void Compile(BinaryWriter writer, CompilerArgs args)
+        {
+            foreach (ASTBase item in Items)
+            {
+                item.ReturnOnly().Compile(writer, args);
+            }
+
+            Type.ReturnOnly().Compile(writer, args);
+
+            writer.Write(Bytecode.CreateList);
+            writer.Write((short)Items.Length);
+        }
+
+        public override string ToString()
+        {
+            return $"[ {Type} : {string.Join(", ", Items as object[])} ]";
+        }
+    }
+
+    public class ArrayAST : ASTBase
+    {
+        public ASTBase Type { get; set; }
+        public ASTBase[] Items { get; set; }
+
+        public ArrayAST(ASTBase type, ASTBase[] items)
+        {
+            Type = type;
+            Items = items;
+        }
+
+        public override void Compile(BinaryWriter writer, CompilerArgs args)
+        {
+            foreach (ASTBase item in Items)
+            {
+                item.ReturnOnly().Compile(writer, args);
+            }
+
+            Type.ReturnOnly().Compile(writer, args);
+
+            writer.Write(Bytecode.CreateArray);
+            writer.Write((short)Items.Length);
+        }
+
+        public override string ToString()
+        {
+            return $"{{ {Type} : {string.Join(", ", Items as object[])} }}";
         }
     }
 }
