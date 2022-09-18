@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FCTB" Version="2.16.24" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NetScript.Compiler\NetScript.Compiler.csproj" />
+    <ProjectReference Include="..\NetScript.Interpreter\NetScript.Interpreter.csproj" />
+  </ItemGroup>
+
+</Project>
