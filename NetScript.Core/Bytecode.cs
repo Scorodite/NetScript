@@ -10,6 +10,7 @@ namespace NetScript.Core
         PushNull,
         PushTrue,
         PushFalse,
+        PushContextValue,
 
         NewVariable,
         GetVariable,
@@ -24,14 +25,18 @@ namespace NetScript.Core
         Invoke,
         Generic,
 
-        CreateFunction, // niy
+        CreateFunction,
         If,
         IfElse,
         Loop,
+        AddSubcontext,
+        Constructor,
+        TryCatch,
 
-        Return, // niy
+        Return,
         Break,
         Continue,
+        Output,
 
         And,
         Or,

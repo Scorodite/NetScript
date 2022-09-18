@@ -15,7 +15,7 @@ namespace NetScript.Compiler.Tokens
         BinRev, Not,
         Range,
         Assign, Field, Import,
-        Function, If, Else, While, For, Loop, In, Return, Break, Continue,
+        Function, If, Else, While, For, Loop, In, Return, Break, Continue, Output,
         String, Char,
         Byte, Sbyte, Short, Ushort, Int, Uint, Long, Ulong, Bool, Null,
         Float, Double, Decimal,
@@ -26,5 +26,7 @@ namespace NetScript.Compiler.Tokens
         EOL, Skip, Name, Sep,
         NewVariable,
         LoadDll,
+        Try,
+        Catch,
     }
 }

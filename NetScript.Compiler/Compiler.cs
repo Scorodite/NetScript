@@ -116,5 +116,14 @@ namespace NetScript.Compiler
             }
             return -1;
         }
+
+        public static void CompileAll(ASTBase[] asts, BinaryWriter writer, CompilerArgs args)
+        {
+            foreach (ASTBase ast in asts)
+            {
+                ast.Compile(writer, args);
+                writer.Write(Bytecode.ClearStack);
+            }
+        }
     }
 }

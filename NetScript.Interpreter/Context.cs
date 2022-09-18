@@ -14,6 +14,7 @@ namespace NetScript.Interpreter
         public Stack Stack { get; }
         public VariableCollection Variables { get; set; }
         public Context Parent { get; set; }
+        public string ReservedVariable { get; set; }
 
         public ContextType Type { get; set; }
 
@@ -60,5 +61,6 @@ namespace NetScript.Interpreter
         Default,
         Function,
         Loop,
+        TryCatch,
     }
 }

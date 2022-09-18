@@ -13,16 +13,56 @@ namespace NetScript.Interpreter
     {
         public static VariableCollection Interpret(Stream stream)
         {
-            Package p = new(stream);
+            Runtime p = new(stream);
 
             Execute(p);
+            
             return p.Last().Variables;
         }
 
-        public static void Execute(Package p)
+        public static void Execute(Runtime p)
         {
-            while (true)
+            while (p.Count > 0)
             {
+                try
+                {
+                    ExecuteUnsafe(p);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (!p.TryHandle(ex))
+                    {
+                        throw;
+                    }
+                }
+            }
+        }
+
+        private static void ExecuteUnsafe(Runtime p)
+        {
+            for (;;)
+            {
+                while (p.IsEnd)
+                {
+                    if (!p.ContextAvariable)
+                    {
+                        return;
+                    }
+                    else if (p.Current.Type == ContextType.Loop)
+                    {
+                        p.Stream.Position = p.Current.Begin;
+                    }
+                    else
+                    {
+                        if (p.Count == 1)
+                        {
+                            return;
+                        }
+                        p.RemoveLast();
+                    }
+                }
+
                 Bytecode bc = p.Reader.ReadBytecode();
 
                 switch (bc)
@@ -369,6 +409,13 @@ namespace NetScript.Interpreter
                             p.Return();
                         }
                         break;
+                    case Bytecode.Output:
+                        {
+                            object ret = p.Stack.Pop();
+                            p.Current.Return = ret;
+                            p.RemoveLast();
+                        }
+                        break;
                     case Bytecode.CreateFunction:
                         {
                             string[] generics = new string[p.Reader.ReadInt32()];
@@ -393,6 +440,30 @@ namespace NetScript.Interpreter
                             p.Stack.Push(p.Names[p.Reader.ReadInt32()]);
                         }
                         break;
+                    case Bytecode.TryCatch:
+                        {
+                            string exName = p.Names[p.Reader.ReadInt32()];
+                            int tryLen = p.Reader.ReadInt32();
+                            int catchLen = p.Reader.ReadInt32();
+                            p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + tryLen, p.Stream.Position + tryLen + catchLen, ContextType.TryCatch);
+                            p.Current.ReservedVariable = exName;
+                        }
+                        break;
+                    case Bytecode.PushContextValue:
+                        {
+                            p.Stack.Push(p.Current.Return);
+                        }
+                        break;
+                    case Bytecode.Constructor:
+                        {
+                            int size = p.Reader.ReadInt32();
+                            object obj = p.Stack.Pop();
+                            p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + size);
+                            p.Current.Return = obj;
+                        }
+                        break;
+                    case Bytecode.AddSubcontext:
+                        throw new NotImplementedException();
                     #region Operators
                     case Bytecode.Sum: { dynamic b = p.Stack.Pop(); dynamic a = p.Stack.Pop(); p.Stack.Push(a + b); } break;
                     case Bytecode.Sub: { dynamic b = p.Stack.Pop(); dynamic a = p.Stack.Pop(); p.Stack.Push(a - b); } break;
@@ -451,6 +522,10 @@ namespace NetScript.Interpreter
                             {
                                 p.Stack.Push(a is null ? type == typeof(void) : (a.GetType() == type || a.GetType().IsSubclassOf(type)));
                             }
+                            else if (b is null)
+                            {
+                                p.Stack.Push(a is null);
+                            }
                             else
                             {
                                 throw new Exception($"Is statement must recieve System.Type, not {b?.GetType() ?? typeof(void)}");
@@ -460,28 +535,6 @@ namespace NetScript.Interpreter
                     #endregion
                     default:
                         throw new Exception($"Unresolved byte at {p.Stream.Position - 1}");
-                }
-
-                if (p.IsEnd)
-                {
-                    if (!p.ContextAvariable)
-                    {
-                        return;
-                    }
-                    else if (p.Current.Type == ContextType.Loop)
-                    {
-                        p.Stream.Position = p.Current.Begin;
-                    }
-                    else
-                    {
-                        if (p.Count == 1)
-                        {
-                            return;
-                        }
-                        Context curr = p.Current;
-                        p.RemoveLast();
-                        p.Stack.Push(curr.Return);
-                    }
                 }
             }
         }

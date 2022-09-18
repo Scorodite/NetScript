@@ -10,7 +10,7 @@ using NetScript.Core;
 
 namespace NetScript.Interpreter
 {
-    public class Package : IList<Context>
+    public class Runtime : IList<Context>
     {
         public Context Current => Content.LastOrDefault();
         public bool ContextAvariable => Content.Count != 0;
@@ -18,6 +18,7 @@ namespace NetScript.Interpreter
         public BinaryReader Reader => Current?.Reader;
         public VariableCollection Variables => Current?.Variables;
         public Stack Stack => Current?.Stack;
+
         public bool IsEnd =>
             Current is null ||
             (Current.End == -1 ?
@@ -87,9 +88,9 @@ namespace NetScript.Interpreter
         }
         #endregion
 
-        private Package() { }
+        private Runtime() { }
 
-        public Package(Stream root)
+        public Runtime(Stream root)
         {
             Content = new() { new(root) };
 
@@ -151,12 +152,21 @@ namespace NetScript.Interpreter
 
         public void RemoveLast()
         {
+            object ret = Current.Return;
+            long end = Current.End;
             long moveAfter = Current.MoveAfter;
+            Stream prev = Stream;
             Content.RemoveAt(Content.Count - 1);
             if (moveAfter > -1)
             {
                 Stream.Position = moveAfter;
             }
+            else if (Stream == prev)
+            {
+                Stream.Position = end;
+            }
+
+            Current.Stack.Push(ret);
         }
 
         public void Break()
@@ -242,14 +252,32 @@ namespace NetScript.Interpreter
             };
         }
 
-        public Package Clone()
+        public Runtime Clone()
         {
-            return new Package()
+            return new Runtime()
             {
                 Names = Names,
                 Constants = Constants,
                 Content = new(),
             };
+        }
+
+        public bool TryHandle(Exception ex)
+        {
+            for (int i = Content.Count - 1; i >= 0; i--)
+            {
+                if (Content[i].Type == ContextType.TryCatch)
+                {
+                    Context tryCont = Content[i];
+                    Content.RemoveRange(i, Content.Count - i);
+                    CreateSubcontext(tryCont.Stream, tryCont.End, tryCont.MoveAfter);
+                    tryCont.Stream.Position = tryCont.End;
+                    Current.Return = ex;
+                    Current.Variables.Add(tryCont.ReservedVariable, ex);
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

@@ -14,9 +14,9 @@ namespace NetScript.Interpreter
         public byte[] Code { get; }
         public VariableCollection Variables { get; }
         
-        private Package Package { get; }
+        private Runtime Package { get; }
 
-        public CustomFunction(string[] generics, string[] args, byte[] funcBc, Package pkg, VariableCollection vars)
+        public CustomFunction(string[] generics, string[] args, byte[] funcBc, Runtime pkg, VariableCollection vars)
         {
             Generics = generics;
             Args = args;
@@ -56,7 +56,7 @@ namespace NetScript.Interpreter
         public object Invoke(object[] args, Type[] generics)
         {
             Context cont = GetContext(args, generics);
-            Package clone = Package.Clone();
+            Runtime clone = Package.Clone();
             clone.Add(cont);
             InterpreterNS.Execute(clone);
             return cont.Return;

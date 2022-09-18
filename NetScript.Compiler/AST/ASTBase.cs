@@ -122,7 +122,28 @@ namespace NetScript.Compiler.AST
 
         public override string ToString()
         {
-            return $"return{(Value is not ConstantAST con || con.Obj is not null ? Value.ToString() : string.Empty)}";
+            return $"return {(Value is not ConstantAST con || con.Obj is not null ? Value.ToString() : string.Empty)}";
+        }
+    }
+
+    public class OutputAST : ASTBase
+    {
+        public ASTBase Value { get; set; }
+
+        public OutputAST(ASTBase value)
+        {
+            Value = value;
+        }
+
+        public override void Compile(BinaryWriter writer, CompilerArgs args)
+        {
+            Value.Compile(writer, args);
+            writer.Write(Bytecode.Output);
+        }
+
+        public override string ToString()
+        {
+            return $"output {(Value is not ConstantAST con || con.Obj is not null ? Value.ToString() : string.Empty)}";
         }
     }
 
@@ -524,11 +545,7 @@ namespace NetScript.Compiler.AST
                 SizePosition falseSkip = new(writer);
                 trueSkips.Last().Begin = writer.BaseStream.Position;
 
-                foreach (ASTBase ast in asts)
-                {
-                    ast.Compile(writer, args);
-                    writer.Write(Bytecode.ClearStack);
-                }
+                Compiler.CompileAll(asts, writer, args);
 
                 falseSkip.SaveSize();
             }
@@ -542,20 +559,12 @@ namespace NetScript.Compiler.AST
                 SizePosition elseLen = new(writer);
                 trueLen.Begin = writer.BaseStream.Position;
 
-                foreach (ASTBase ast in asts)
-                {
-                    ast.Compile(writer, args);
-                    writer.Write(Bytecode.ClearStack);
-                }
+                Compiler.CompileAll(asts, writer, args);
 
                 trueLen.SaveSize();
                 elseLen.Begin = writer.BaseStream.Position;
 
-                foreach (ASTBase ast in ElseASTs)
-                {
-                    ast.Compile(writer, args);
-                    writer.Write(Bytecode.ClearStack);
-                }
+                Compiler.CompileAll(ElseASTs, writer, args);
 
                 elseLen.SaveSize();
             }
@@ -568,11 +577,7 @@ namespace NetScript.Compiler.AST
                 SizePosition falseSkip = new(writer);
                 trueSkips.Last().Begin = writer.BaseStream.Position;
 
-                foreach (ASTBase ast in asts)
-                {
-                    ast.Compile(writer, args);
-                    writer.Write(Bytecode.ClearStack);
-                }
+                Compiler.CompileAll(asts, writer, args);
 
                 falseSkip.SaveSize();
 
@@ -703,6 +708,88 @@ namespace NetScript.Compiler.AST
         public override string ToString()
         {
             return $"loop {{ {string.Join("; ", ASTs as object[])} }}";
+        }
+    }
+
+    public class TryCatchAST : ASTBase
+    {
+        public string ExceptionVariable { get; set; }
+        public ASTBase[] TryASTs { get; set; }
+        public ASTBase[] CatchASTs { get; set; }
+
+        public TryCatchAST(string excVariable, ASTBase[] tryASTs, ASTBase[] catchASTs)
+        {
+            ExceptionVariable = excVariable;
+            TryASTs = tryASTs;
+            CatchASTs = catchASTs;
+        }
+
+        public override void Compile(BinaryWriter writer, CompilerArgs args)
+        {
+            writer.Write(Bytecode.TryCatch);
+            writer.Write(args.GetNameID(ExceptionVariable));
+
+            SizePosition tryBlockSize = new(writer);
+            SizePosition catchBlockSize = new(writer);
+            tryBlockSize.Begin += sizeof(int);
+
+            Compiler.CompileAll(TryASTs, writer, args);
+
+            tryBlockSize.SaveSize();
+            catchBlockSize.Begin = writer.BaseStream.Position;
+
+            Compiler.CompileAll(CatchASTs, writer, args);
+
+            catchBlockSize.SaveSize();
+        }
+
+        public override string ToString()
+        {
+            return $"try {{ {string.Join("; ", TryASTs as object[])} }} catch {ExceptionVariable} {{ {string.Join("; ", CatchASTs as object[])} }}";
+        }
+    }
+
+    public class GetContextValueAST : ASTBase
+    {
+        public GetContextValueAST() { }
+
+        public override void Compile(BinaryWriter writer, CompilerArgs args)
+        {
+            writer.Write(Bytecode.PushContextValue);
+        }
+
+        public override string ToString()
+        {
+            return ".";
+        }
+    }
+
+    public class ConstructorAST : ASTBase
+    {
+        public ASTBase Obj { get; set; }
+        public ASTBase[] ASTs { get; set; }
+
+        public ConstructorAST(ASTBase obj, ASTBase[] asts)
+        {
+            Obj = obj;
+            ASTs = asts;
+        }
+
+        public override void Compile(BinaryWriter writer, CompilerArgs args)
+        {
+            Obj.Compile(writer, args);
+
+            writer.Write(Bytecode.Constructor);
+            SizePosition size = new(writer);
+
+            Compiler.CompileAll(ASTs, writer, args);
+
+            size.SaveSize();
+        }
+
+        public override string ToString()
+        {
+            return $"{Obj}.{{ {string.Join("; ", ASTs as object[])} }}";
         }
     }
 

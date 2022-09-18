@@ -101,7 +101,7 @@ namespace NetScript.Compiler.Rules
                 ASTBase obj = compiler.GetAST(tokens.GetRange(0, openPos));
                 int lastSep = openPos;
                 List<ASTBase> args = new();
-                while (true)
+                for (;;)
                 {
                     int sepPos = compiler.FindToken(tokens, TokenType.Sep, lastSep + 1, tokens.Count - 1);
                     if (sepPos >= 0)
@@ -162,15 +162,17 @@ namespace NetScript.Compiler.Rules
 
         public override bool IsRight(List<Token> tokens, Compiler compiler)
         {
-            return tokens.Count > 2 && tokens.Last().Type == TokenType.Name && tokens.ElementAt(tokens.Count - 2).Type == TokenType.Field;
+            return tokens.Count >= 2 && tokens.Last().Type == TokenType.Name && tokens[tokens.Count - 2].Type == TokenType.Field;
         }
 
-        public override ASTBase GetAST(List<Token> tcoll, Compiler compiler)
+        public override ASTBase GetAST(List<Token> tokens, Compiler compiler)
         {
-            List<Token> tokens = tcoll is List<Token> ltokens ? ltokens : new(tcoll);
-
-            ASTBase obj = compiler.GetAST(tokens.GetRange(0, tokens.Count - 2));
             string name = tokens.Last().Value;
+            if (tokens.Count == 2)
+            {
+                return new GetFieldAST(new GetContextValueAST() { Index = tokens.First().Index }, name) { Index = tokens.Last().Index };
+            }
+            ASTBase obj = compiler.GetAST(tokens.GetRange(0, tokens.Count - 2));
 
             return new GetFieldAST(obj, name) { Index = tokens.Last().Index };
         }
@@ -204,7 +206,7 @@ namespace NetScript.Compiler.Rules
             {
                 int lastSep = 0;
                 List<ASTBase> args = new();
-                while (true)
+                for (;;)
                 {
                     int sepPos = compiler.FindToken(tokens, SepArgs, lastSep + 1, tokens.Count - 1);
                     if (sepPos >= 0)
@@ -265,13 +267,13 @@ namespace NetScript.Compiler.Rules
             return new CreateFunctionAST(args, generics, asts) { Index = tokens.First().Index };
         }
 
-        public string[] GetNameSequence(List<Token> tokens, TokenType opening, TokenType closing, ref int i)
+        public static string[] GetNameSequence(List<Token> tokens, TokenType opening, TokenType closing, ref int i)
         {
             List<string> res = new();
             if (i < tokens.Count - 1 && tokens[i].Type == opening /*&& tokens[i + 1].Type != closing*/)
             {
                 i++;
-                while (true)
+                for (;;)
                 {
                     if (tokens[i].Type == TokenType.Name)
                     {
@@ -462,6 +464,28 @@ namespace NetScript.Compiler.Rules
             return new ReturnAST(ast) { Index = tokens.First().Index };
         }
     }
+    
+    public class OutputRule : ParsingRule
+    {
+        public override bool IsRight(List<Token> tokens, Compiler compiler)
+        {
+            return tokens.Count > 0 && tokens.First().Type == TokenType.Output;
+        }
+
+        public override ASTBase GetAST(List<Token> tokens, Compiler compiler)
+        {
+            if (tokens.Count == 1)
+            {
+                return new ReturnAST(new ConstantAST(null) { Index = tokens.First().Index }) { Index = tokens.First().Index };
+            }
+            if (tokens[1].Type != TokenType.OpeningGroup || tokens.Last().Type != TokenType.ClosingGroup)
+            {
+                throw new CompilerException("If output expression returns value, it must be in brackets", tokens.First().Index);
+            }
+            ASTBase ast = compiler.GetAST(tokens.GetRange(1, tokens.Count - 1));
+            return new OutputAST(ast) { Index = tokens.First().Index };
+        }
+    }
 
     public class LoadDllRule : ParsingRule
     {
@@ -473,6 +497,55 @@ namespace NetScript.Compiler.Rules
         public override ASTBase GetAST(List<Token> tokens, Compiler compiler)
         {
             return new LoadDllAST(System.Text.RegularExpressions.Regex.Unescape(tokens.Last().Value[1..^1])) { Index = tokens.First().Index };
+        }
+    }
+
+    public class TryCatchRule : ParsingRule
+    {
+        public override bool IsRight(List<Token> tokens, Compiler compiler)
+        {
+            return tokens.Count > 0 && tokens.First().Type == TokenType.Try && compiler.FindToken(tokens, TokenType.Catch, 1) > 0;
+        }
+
+        public override ASTBase GetAST(List<Token> tokens, Compiler compiler)
+        {
+            if (tokens[1].Type == TokenType.OpeningQuote)
+            {
+                int tryEnd = compiler.FindToken(tokens, TokenType.ClosingQuote, 2);
+                if (tryEnd > 0 && tokens[tryEnd + 1].Type == TokenType.Catch &&
+                    tokens[tryEnd + 2].Type == TokenType.Name &&
+                    tokens[tryEnd + 3].Type == TokenType.OpeningQuote)
+                {
+                    string exceptionVar = tokens[tryEnd + 2].Value;
+                    int catchEnd = compiler.FindToken(tokens, TokenType.ClosingQuote, tryEnd + 4);
+                    if (catchEnd == tokens.Count - 1)
+                    {
+                        return new TryCatchAST(exceptionVar,
+                            compiler.GetASTs(tokens.GetRange(2, tryEnd - 2)),
+                            compiler.GetASTs(tokens.GetRange(tryEnd + 4, catchEnd - tryEnd - 4)));
+                    }
+                }
+            }
+            throw new CompilerException("Unknown construction", tokens.First().Index);
+        }
+    }
+
+    public class ConstructorRule : ParsingRule
+    {
+        public ConstructorRule() { }
+
+        public override bool IsRight(List<Token> tokens, Compiler compiler)
+        {
+            int openQuote = compiler.FindTokenRev(tokens, TokenType.OpeningQuote, tokens.Count - 2);
+            return tokens.Last().Type == TokenType.ClosingQuote && openQuote > 2 && tokens[openQuote - 1].Type == TokenType.Field;
+        }
+
+        public override ASTBase GetAST(List<Token> tokens, Compiler compiler)
+        {
+            int openPos = compiler.FindTokenRev(tokens, TokenType.OpeningQuote, tokens.Count - 2);
+            ASTBase obj = compiler.GetAST(tokens.GetRange(0, openPos - 1));
+            ASTBase[] asts = compiler.GetASTs(tokens.GetRange(openPos + 1, tokens.Count - openPos - 2));
+            return new ConstructorAST(obj, asts);
         }
     }
 }

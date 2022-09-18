@@ -100,7 +100,10 @@ namespace NetScript.Compiler
             Expressions.Add((new(@"return\b"), TokenType.Return));
             Expressions.Add((new(@"break\b"), TokenType.Break));
             Expressions.Add((new(@"continue\b"), TokenType.Continue));
+            Expressions.Add((new(@"output\b"), TokenType.Output));
             Expressions.Add((new(@"loop\b"), TokenType.Loop));
+            Expressions.Add((new(@"try\b"), TokenType.Try));
+            Expressions.Add((new(@"catch\b"), TokenType.Catch));
             Expressions.Add((new(@"loaddll\b"), TokenType.LoadDll));
             Expressions.Add((new(@"[A-Za-zА-Яа-я_][A-Za-zА-Яа-я_0-9]*"), TokenType.Name));
         }
@@ -126,11 +129,13 @@ namespace NetScript.Compiler
             Rules.Add(new SingleTokenRule(TokenType.Continue, t => new ContinueAST()));
             Rules.Add(new SingleTokenRule(TokenType.Name, t => new GetVariableAST(t.Value)));
             Rules.Add(new SingleTokenRule(TokenType.Import, t => new ImportAST(t.Value["import".Length..].Trim())));
+            Rules.Add(new SingleTokenRule(TokenType.Field, t => new GetContextValueAST()));
             Rules.Add(new GetFieldRule());
             Rules.Add(new NewVariableRule());
             Rules.Add(new FunctionRule());
             Rules.Add(new ReturnRule());
             Rules.Add(new BreakRule());
+            Rules.Add(new OutputRule());
             Rules.Add(new InvokeRule());
             Rules.Add(new GetIndexRule());
             Rules.Add(new GenericRule());
@@ -138,7 +143,9 @@ namespace NetScript.Compiler
             Rules.Add(new WhileRule());
             Rules.Add(new ForRule());
             Rules.Add(new LoopRule());
+            Rules.Add(new TryCatchRule());
             Rules.Add(new LoadDllRule());
+            Rules.Add(new ConstructorRule());
         }
 
         protected virtual void BuildUnaryRules()

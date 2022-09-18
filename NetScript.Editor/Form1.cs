@@ -59,7 +59,7 @@ namespace NetScript.Editor
             r.ClearStyle(Comment, String, Keyword, Error);
             r.SetStyle(Comment, @"//.*|/\*(.|\n)*?\*/", RegexOptions.Multiline);
             r.SetStyle(String, @"""(\\.|[^""\\\n])*""|'(\\.|[^'\\\n])*'");
-            r.SetStyle(Keyword, @"\b(true|false|null|is(\s+not)?|to|nameof|typeof|default|import|var|func|if|else|while|for|in|return|break|continue|loop|loaddll|object|expando|string|char|bool|byte|s?byte|u?short|u?int|u?long|float|decimal|double|Console|Math|Range)\b");
+            r.SetStyle(Keyword, @"\b(true|false|null|is(\s+not)?|to|nameof|typeof|default|import|var|func|if|else|while|for|in|try|catch|output|return|break|continue|loop|loaddll|object|expando|string|char|bool|byte|s?byte|u?short|u?int|u?long|float|decimal|double|Console|Math|Range)\b");
         }
 
         private void NewFile(object sender, EventArgs e)
@@ -275,5 +275,54 @@ namespace NetScript.Editor
                 TextBox.WriteLine("\n");
             }
         }
+
+        public override void WriteLine(bool v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(char v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(char[] v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(ReadOnlySpan<char> v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(decimal v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(float v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(double v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(int v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(long v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(uint v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(ulong v) =>
+            WriteLine(v.ToString());
+        public override void WriteLine(object v) =>
+            WriteLine(v.ToString());
+        public override void Write(bool v) =>
+            Write(v.ToString());
+        public override void Write(char v) =>
+            Write(v.ToString());
+        public override void Write(int v) =>
+            Write(v.ToString());
+        public override void Write(long v) =>
+            Write(v.ToString());
+        public override void Write(uint v) =>
+            Write(v.ToString());
+        public override void Write(ulong v) =>
+            Write(v.ToString());
+        public override void Write(decimal v) =>
+            Write(v.ToString());
+        public override void Write(double v) =>
+            Write(v.ToString());
+        public override void Write(float v) =>
+            Write(v.ToString());
+        public override void Write(char[] v) =>
+            Write(v.ToString());
+        public override void Write(object v) =>
+            Write(v.ToString());
+        public override void Write(StringBuilder v) =>
+            Write(v?.ToString() ?? string.Empty);
     }
 }
