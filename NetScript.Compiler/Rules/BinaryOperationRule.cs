@@ -8,6 +8,9 @@ using NetScript.Compiler.Tokens;
 
 namespace NetScript.Compiler.Rules
 {
+    /// <summary>
+    /// Parsing rule of binary operations
+    /// </summary>
     public class BinaryOperationRule
     {
         public TokenType Operator { get; }
@@ -49,6 +52,9 @@ namespace NetScript.Compiler.Rules
         }
     }
 
+    /// <summary>
+    /// Rule of assign operation
+    /// </summary>
     public class AssignOperationRule : BinaryOperationRule
     {
         public AssignOperationRule(TokenType op) : base(op)

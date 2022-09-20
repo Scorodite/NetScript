@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace NetScript.Interpreter
 {
+    /// <summary>
+    /// MethodInfos with their owner
+    /// </summary>
     public class MethodWithObject
     {
         public object Obj { get; }

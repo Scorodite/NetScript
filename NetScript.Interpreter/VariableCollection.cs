@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace NetScript.Interpreter
 {
+    /// <summary>
+    /// Collection that stores mutable and immutable variables
+    /// </summary>
     public class VariableCollection : IDictionary<string, object>
     {
         public VariableCollection Parent { get; set; }
@@ -36,7 +39,7 @@ namespace NetScript.Interpreter
         {
             if (Content.TryGetValue(key, out var info) && !info.Mutable)
             {
-                throw new Exception($"Tried to change constant variable {key}");
+                throw new ImmutableVariableChangeException(key, $"Tried to change immutable variable {key}");
             }
             Content[key] = new(value, mutable);
         }
@@ -122,9 +125,16 @@ namespace NetScript.Interpreter
 
         public void Set(string key, object value)
         {
-            if (Content.TryGetValue(key, out var info) && info.Mutable)
+            if (Content.TryGetValue(key, out var info))
             {
-                Content[key] = new(value);
+                if (info.Mutable)
+                {
+                    Content[key] = new(value);
+                }
+                else
+                {
+                    throw new ImmutableVariableChangeException(key, $"Tried to change immutable variable {key}");
+                }
             }
             else if (Parent is not null)
             {
@@ -132,7 +142,7 @@ namespace NetScript.Interpreter
             }
             else
             {
-                throw new Exception($"Variable {key} does not exist");
+                throw new VariableDoesNotExistException(key, $"Variable {key} does not exist");
             }
         }
 
@@ -148,7 +158,7 @@ namespace NetScript.Interpreter
             }
             else
             {
-                throw new Exception($"Variable {key} does not exist");
+                throw new VariableDoesNotExistException(key, $"Variable {key} does not exist");
             }
         }
     }
@@ -168,6 +178,26 @@ namespace NetScript.Interpreter
         {
             Value = val;
             Mutable = mutable;
+        }
+    }
+
+    public class VariableDoesNotExistException : Exception
+    {
+        public string Name { get; }
+
+        public VariableDoesNotExistException(string name, string msg) : base(msg)
+        {
+            Name = name;
+        }
+    }
+
+    public class ImmutableVariableChangeException : Exception
+    {
+        public string Name { get; }
+
+        public ImmutableVariableChangeException(string name, string msg) : base(msg)
+        {
+            Name = name;
         }
     }
 }

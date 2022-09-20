@@ -9,6 +9,9 @@ using NetScript.Core;
 
 namespace NetScript.Interpreter
 {
+    /// <summary>
+    /// Class of NetScript bytecode interpreter
+    /// </summary>
     public static class InterpreterNS
     {
         public static VariableCollection Interpret(Stream stream)
@@ -688,6 +691,12 @@ namespace NetScript.Interpreter
             return pos[0] > -1;
         }
 
+        /// <summary>
+        /// Returns true if types A are equal or inherited from types B
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool CompareSigns(Type[] a, Type[] b)
         {
             if (a.Length == b.Length)

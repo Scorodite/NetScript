@@ -10,16 +10,49 @@ using System.Text.RegularExpressions;
 
 namespace NetScript.Compiler
 {
+    /// <summary>
+    /// Base compiler class
+    /// </summary>
     public abstract class Compiler
     {
+        /// <summary>
+        /// Expressions for parser
+        /// </summary>
         public abstract ICollection<(Regex, TokenType)> Expressions { get; }
+
+        /// <summary>
+        /// Collection of special constructions parsing rules
+        /// </summary>
         public abstract ICollection<SpecialConstructionRule> SpecialRules { get; }
+
+        /// <summary>
+        /// Collection of parsing rules
+        /// </summary>
         public abstract ICollection<ParsingRule> Rules { get; }
+
+        /// <summary>
+        /// Collection of binary operations parsing rules
+        /// </summary>
         public abstract ICollection<ICollection<BinaryOperationRule>> BinaryRules { get; }
+
+        /// <summary>
+        /// Collection of unary operations parsing rules
+        /// </summary>
         public abstract ICollection<UnaryOperationRule> UnaryRules { get; }
 
+        /// <summary>
+        /// Compiles code in bytecode that will be written in output stream
+        /// </summary>
         public abstract void Compile(string code, Stream output);
+
+        /// <summary>
+        /// Converts tokens in ASTs
+        /// </summary>
         public abstract ASTBase[] GetASTs(List<Token> tokens);
+
+        /// <summary>
+        /// Converts tokens in AST
+        /// </summary>
         public abstract ASTBase GetAST(List<Token> tokens);
 
         public virtual bool IsBracket(TokenType type) =>

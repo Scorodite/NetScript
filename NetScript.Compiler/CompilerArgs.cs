@@ -14,16 +14,55 @@ using System.Dynamic;
 
 namespace NetScript.Compiler
 {
+    /// <summary>
+    /// Class that stores additional info of compilation
+    /// </summary>
     public class CompilerArgs
     {
+        /// <summary>
+        /// List of constant values
+        /// </summary>
         public List<object> Constants { get; }
+
+        /// <summary>
+        /// List of names
+        /// </summary>
         public List<string> Names { get; }
+
+        /// <summary>
+        /// List of imported dlls that were imported by "loaddll" expression
+        /// </summary>
         public List<string> Dlls { get; }
+
+        /// <summary>
+        /// List of variables
+        /// </summary>
         public List<string> Variables { get; }
+
+        /// <summary>
+        /// List of used imports
+        /// </summary>
         public Dictionary<string, Type> Imports { get; }
+
+        /// <summary>
+        /// List of usable imports
+        /// </summary>
         public Dictionary<string, Type> AvariableImports { get; }
+
+        /// <summary>
+        /// List of all assemblies that were collected in begin of compilation
+        /// or with "loaddll" expression
+        /// </summary>
         public List<Assembly> Assemblies { get; }
+
+        /// <summary>
+        /// ID of current sector
+        /// </summary>
         public ushort CurrentCodeSector { get; private set; }
+
+        /// <summary>
+        /// ID of "__unnamed". Required for constructs that can but don't have a name
+        /// </summary>
         public int UnnamedID => GetNameID("__unnamed");
 
         public CompilerArgs()
@@ -36,6 +75,7 @@ namespace NetScript.Compiler
             Variables = new();
             AvariableImports = new()
             {
+                // Preimported types
                 ["object"] = typeof(object),
                 ["expando"] = typeof(ExpandoObject),
                 ["bool"] = typeof(bool),

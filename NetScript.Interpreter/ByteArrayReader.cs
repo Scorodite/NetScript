@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace NetScript.Interpreter
 {
+    /// <summary>
+    /// Stream that reads data from byte array
+    /// </summary>
     public class ByteArrayReader : Stream
     {
         private byte[] Source { get; }

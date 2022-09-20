@@ -3,6 +3,9 @@ using System.IO;
 
 namespace NetScript.Compiler.AST
 {
+    /// <summary>
+    /// Base AST class of unary operation
+    /// </summary>
     public abstract class UnaryOperationAST : ASTBase
     {
         public ASTBase A { get; set; }

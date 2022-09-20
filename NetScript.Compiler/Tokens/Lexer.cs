@@ -4,6 +4,9 @@ using System.Text.RegularExpressions;
 
 namespace NetScript.Compiler.Tokens
 {
+    /// <summary>
+    /// Lexer. It converts string in tokens
+    /// </summary>
     public static class Lexer
     {
         public static List<Token> LexString(string code, IEnumerable<(Regex re, TokenType type)> expressions)

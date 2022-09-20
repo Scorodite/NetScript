@@ -9,11 +9,17 @@ using NetScript.Core;
 
 namespace NetScript.Tester
 {
+    /// <summary>
+    /// A program created to demonstrate how bytecode works
+    /// </summary>
     class Program
     {
         static void Main(string[] args)
         {
-            TestBytecode();
+            Console.Write("File path: ");
+            string path = Console.ReadLine();
+
+            TestBytecode(path);
         }
 
         private static object ReadConst(BinaryReader reader)
@@ -39,13 +45,16 @@ namespace NetScript.Tester
             };
         }
 
-        private static void TestBytecode()
+        private static void TestBytecode(string path)
         {
             NetScriptCompiler comp = new();
             MemoryStream memory = new();
-            ASTBase[] asts = comp.GetASTs(Lexer.LexString(File.ReadAllText(@"D:\test.ns"), comp.Expressions));
+
+            string code = File.ReadAllText(path);
+            ASTBase[] asts = comp.GetASTs(Lexer.LexString(code, comp.Expressions));
             Console.WriteLine(string.Join(";\n", asts as object[]) + "\n\n");
-            comp.Compile(File.ReadAllText(@"D:\test.ns"), memory);
+
+            comp.Compile(code, memory);
             memory.Position = 0;
             BinaryReader reader = new(memory);
 
@@ -96,17 +105,17 @@ namespace NetScript.Tester
             }
         }
 
-        private static void TestInterpreter()
+        private static void TestInterpreter(string path)
         {
             MemoryStream memory = new();
             NetScriptCompiler comp = new();
-            comp.Compile(File.ReadAllText(@"D:/test.ns"), memory);
+            comp.Compile(path, memory);
             memory.Position = 0;
             VariableCollection vars = InterpreterNS.Interpret(memory);
 
-            if (vars.TryGetValue("main", out var mainObj) && mainObj is CustomFunction main)
+            if (vars.TryGetValue("main", out var mainObj) && mainObj is InvokableFunction main)
             {
-                Console.WriteLine(main.Invoke(Array.Empty<object>(), null));
+                Console.WriteLine(main.Invoke(null, null));
             }
         }
     }

@@ -8,6 +8,9 @@ using NetScript.Compiler.Tokens;
 
 namespace NetScript.Compiler.Rules
 {
+    /// <summary>
+    /// Base class of rules that does not require "TokenType.EOL" (;)
+    /// </summary>
     public abstract class SpecialConstructionRule
     {
         public abstract bool IsRight(List<Token> tokens, int index, Compiler compiler);

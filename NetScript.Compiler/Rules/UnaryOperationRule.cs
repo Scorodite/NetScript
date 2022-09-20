@@ -8,6 +8,9 @@ using NetScript.Compiler.Tokens;
 
 namespace NetScript.Compiler.Rules
 {
+    /// <summary>
+    /// Parsing rule of unary operations
+    /// </summary>
     public class UnaryOperationRule
     {
         public TokenType Operator { get; }

@@ -10,6 +10,9 @@ using NetScript.Core;
 
 namespace NetScript.Interpreter
 {
+    /// <summary>
+    /// Class that provides additional information of current bytecode interpretation
+    /// </summary>
     public class Runtime : IList<Context>
     {
         public Context Current => Content.LastOrDefault();

@@ -18,6 +18,7 @@ namespace NetScript.Interpreter
 
         public ContextType Type { get; set; }
 
+        public string Name { get; set; }
         public long Begin { get; set; }
         public long End { get; set; }
         public long MoveAfter { get; set; }

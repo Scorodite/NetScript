@@ -6,11 +6,22 @@ using System.Linq;
 
 namespace NetScript.Compiler.Rules
 {
+    /// <summary>
+    /// Base parsing rule class
+    /// </summary>
     public abstract class ParsingRule
     {
         public abstract bool IsRight(List<Token> tokens, Compiler compiler);
         public abstract ASTBase GetAST(List<Token> tokens, Compiler compiler);
 
+        /// <summary>
+        /// Returns name sequence that separated by "TokenType.Sep" (,)
+        /// </summary>
+        /// <param name="tokens"></param>
+        /// <param name="opening"></param>
+        /// <param name="closing"></param>
+        /// <param name="i"></param>
+        /// <returns></returns>
         public static string[] GetNameSequence(List<Token> tokens, TokenType opening, TokenType closing, ref int i)
         {
             List<string> res = new();
