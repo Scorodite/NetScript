@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace NetScript.Interpreter
 {
+    /// <summary>
+    /// EventInfo with it's owner
+    /// </summary>
     public class EventWithObject
     {
         public object Obj { get; }

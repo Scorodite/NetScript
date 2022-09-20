@@ -2,6 +2,9 @@
 
 namespace NetScript.Interpreter
 {
+    /// <summary>
+    /// Exception that is generated if "throw" expression throws object that is not inherited from Exception
+    /// </summary>
     class NotThrowableException : Exception
     {
         public object Object { get; }

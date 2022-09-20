@@ -9,6 +9,9 @@ using System.IO;
 
 namespace NetScript.Compiler.AST
 {
+    /// <summary>
+    /// Base AST class of binary operation
+    /// </summary>
     public abstract class BinaryOperationAST : ASTBase
     {
         public ASTBase A { get; set; }

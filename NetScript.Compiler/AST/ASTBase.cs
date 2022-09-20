@@ -9,6 +9,9 @@ using System.Reflection;
 
 namespace NetScript.Compiler.AST
 {
+    /// <summary>
+    /// Base abstract syntax tree class
+    /// </summary>
     public abstract class ASTBase
     {
         public int Index { get; set; }
