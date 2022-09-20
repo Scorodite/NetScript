@@ -50,7 +50,6 @@ namespace NetScript.Editor
         private void Editor_TextChanged(object sender, TextChangedEventArgs e)
         {
             var r = Editor.Range;
-
             r.ClearFoldingMarkers();
             r.SetFoldingMarkers("{(?=\\s*(\\n|$))", "(?<=(\\n|^)\\s*)}");
             r.SetFoldingMarkers("\\((?=\\s*(\\n|$))", "(?<=(\\n|^)\\s*)\\)");
@@ -59,8 +58,13 @@ namespace NetScript.Editor
             r.ClearStyle(Comment, String, Keyword, Error);
             r.SetStyle(Comment, @"//.*|/\*(.|\n)*?\*/", RegexOptions.Multiline);
             r.SetStyle(String, @"""(\\.|[^""\\\n])*""|'(\\.|[^'\\\n])*'");
-            r.SetStyle(Keyword, @"\b(true|false|null|is(\s+not)?|to|nameof|typeof|default|import|var|func|if|else|while|for|in|try|catch|output|return|break|continue|loop|loaddll|object|expando|string|char|bool|byte|s?byte|u?short|u?int|u?long|float|decimal|double|Console|Math|Range|Function(.(ToAction|ToFunc|ToDelegate))?)\b");
+            r.SetStyle(Keyword, @"\b(true|false|null|is(\s+not)?|to|nameof|typeof|default|import|var|func|if|else|while|for|in|try|catch|throw|output|return|break|continue|loop|loaddll|object|expando|string|char|bool|byte|s?byte|u?short|u?int|u?long|float|decimal|double|Range)\b");
+            r.SetStyle(Keyword, $"\\b(Console(.({GetMethodsPattern(typeof(Console))}))?|Math(.({GetMethodsPattern(typeof(Math))}))?|" +
+                                $"Function(.({GetMethodsPattern(typeof(Function))}))?)\\b");
         }
+
+        private static string GetMethodsPattern(Type t) =>
+            string.Join('|', new HashSet<string>(from m in t.GetMembers() where Regex.IsMatch(m.Name, @"^[A-Z]\w+$") select m.Name));
 
         private void NewFile(object sender, EventArgs e)
         {
@@ -167,7 +171,7 @@ namespace NetScript.Editor
                 memory.Dispose();
                 return (execTime, exception);
             }, Canceler.Token);
-
+            
             ExecutionCheckTimer.Start();
         }
 

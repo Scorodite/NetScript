@@ -24,6 +24,7 @@ namespace NetScript.Compiler
         public Dictionary<string, Type> AvariableImports { get; }
         public List<Assembly> Assemblies { get; }
         public ushort CurrentCodeSector { get; private set; }
+        public int UnnamedID => GetNameID("__unnamed");
 
         public CompilerArgs()
         {
@@ -52,6 +53,7 @@ namespace NetScript.Compiler
                 ["string"] = typeof(string),
                 ["char"] = typeof(char),
 
+                [nameof(List<object>)] = typeof(List<>),
                 [nameof(Console)] = typeof(Console),
                 [nameof(Math)] = typeof(Math),
                 [nameof(Interpreter.Range)] = typeof(Interpreter.Range),

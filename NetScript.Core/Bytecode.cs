@@ -37,6 +37,7 @@ namespace NetScript.Core
         Break,
         Continue,
         Output,
+        Throw,
 
         And,
         Or,
@@ -49,7 +50,7 @@ namespace NetScript.Core
         
         Rev, BinRev, Not, GetTypeObj, Default,
 
-        CreateList, CreateArray,
+        CreateList, CreateArray, GetArrayType,
 
         ConstByte, ConstSbyte, ConstShort, ConstUShort, ConstInt, ConstUInt,
         ConstLong, ConstULong, ConstFloat, ConstDecimal, ConstDouble,

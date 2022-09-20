@@ -166,9 +166,16 @@ namespace NetScript.Interpreter
                                 prop.SetValue(obj, val);
                             }
                             else if (t.GetEvent(name) is EventInfo ev && ev.AddMethod is not null &&
-                                ev.RaiseMethod.IsStatic == obj is null)
+                                ev.AddMethod.IsStatic == obj is null)
                             {
-                                ev.AddMethod.Invoke(obj, new object[] { val });
+                                ev.AddMethod.Invoke(obj, new object[] {
+                                    val is InvokableFunction ?
+                                        Function.ToDelegate.GetResult(
+                                            new object[] { val },
+                                            new Type[] { ev.AddMethod.GetParameters().First().ParameterType }
+                                         ).Value  :
+                                        val
+                                });
                             }
                             else
                             {
@@ -433,6 +440,8 @@ namespace NetScript.Interpreter
                         break;
                     case Bytecode.CreateFunction:
                         {
+                            string name = p.Names[p.Reader.ReadInt32()];
+
                             string[] generics = new string[p.Reader.ReadInt32()];
                             for (int i = 0; i < generics.Length; i++)
                             {
@@ -457,7 +466,7 @@ namespace NetScript.Interpreter
                                 p.Stream.Read(funcBc);
                                 p.CodeSectors.Add(codeSectorID, funcBc);
                             }
-                            p.Stack.Push(new CustomFunction(generics, args, funcBc, p, p.Variables));
+                            p.Stack.Push(new CustomFunction(name, generics, args, funcBc, p, p.Variables));
                         }
                         break;
                     case Bytecode.PushName:
@@ -512,31 +521,66 @@ namespace NetScript.Interpreter
                             p.Stack.Push(Activator.CreateInstance(typeof(List<>).MakeGenericType(type), new object[] { list }));
                         }
                         break;
-                    case Bytecode.CreateArray:
+                    case Bytecode.CreateArray: // TODO : Make array ranks
                         {
-                            int count = p.Reader.ReadInt16();
                             object typeUndef = p.Stack.Pop();
                             if (typeUndef is not Type type)
                             {
                                 throw new ArgumentException($"Array must recieve System.Type, not {typeUndef?.GetType() ?? typeof(void)}");
                             }
 
-                            Array array = Array.CreateInstance(type, count);
-                            for (int i = array.Length - 1; i >= 0; i--)
+                            int rank = p.Reader.ReadByte();
+                            if (rank == 1)
                             {
-                                object item = p.Stack.Pop();
-                                if (item.GetType() == type || item.GetType().IsSubclassOf(type) || item is null && !type.IsValueType)
+                                int len = p.Reader.ReadInt16();
+                                Array list = Array.CreateInstance(type, len);
+                                for (int i = len - 1; i >= 0; i--)
                                 {
-                                    array.SetValue(item, i);
+                                    list.SetValue(p.Stack.Pop(), i);
                                 }
-                                else
-                                {
-                                    throw new Exception($"Tried to create array of type {type} with {item} ({item?.GetType() ?? typeof(void)})");
-                                }
+                                p.Stack.Push(list);
                             }
-                            p.Stack.Push(array);
+                            else
+                            {
+                                int[] lens = new int[rank];
+                                for (int i = 0; i < rank; i++)
+                                {
+                                    lens[i] = p.Reader.ReadInt16();
+                                }
+                                CreateArray(lens, type, p);
+                            }
                         }
                         break;
+                    case Bytecode.GetArrayType:
+                        {
+                            int rank = p.Reader.ReadByte();
+                            object obj = p.Stack.Pop();
+
+                            if (obj is not Type type)
+                            {
+                                throw new ArgumentException($"Array must recieve System.Type, not {obj?.GetType() ?? typeof(void)}");
+                            }
+
+                            p.Stack.Push(type.MakeArrayType(rank));
+                        }
+                        break;
+                    case Bytecode.Throw:
+                        {
+                            object obj = p.Stack.Pop();
+
+                            if (obj is Exception ex)
+                            {
+                                throw ex;
+                            }
+                            else if (obj is string msg)
+                            {
+                                throw new Exception(msg);
+                            }
+                            else
+                            {
+                                throw new NotThrowableException(obj);
+                            }
+                        }
                     case Bytecode.AddSubcontext:
                         throw new NotImplementedException();
                     #region Operators
@@ -612,6 +656,36 @@ namespace NetScript.Interpreter
                         throw new Exception($"Unresolved byte at {p.Stream.Position - 1}");
                 }
             }
+        }
+
+        private static void CreateArray(int[] lens, Type t, Runtime p)
+        {
+            Array arr = Array.CreateInstance(t, lens);
+            int[] curr = lens.Select(i => i - 1)/*.Reverse()*/.ToArray();
+
+            do
+            {
+                arr.SetValue(p.Stack.Pop(), curr);
+            }
+            while (MoveArrayPos(curr, lens));
+
+            p.Stack.Push(arr);
+        }
+
+        private static bool MoveArrayPos(int[] pos, int[] lens)
+        {
+            pos[^1]--;
+
+            for (int i = pos.Length - 1; i > 0; i--)
+            {
+                if (pos[i] < 0)
+                {
+                    pos[i - 1]--;
+                    pos[i] = lens[i] - 1;
+                }
+            }
+
+            return pos[0] > -1;
         }
 
         public static bool CompareSigns(Type[] a, Type[] b)

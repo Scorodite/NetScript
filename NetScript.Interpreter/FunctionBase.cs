@@ -12,10 +12,19 @@ namespace NetScript.Interpreter
         public static readonly Function ToFunc = new ToFuncFunction();
         public static readonly Function ToDelegate = new ToDelegateFunction();
 
+        public abstract string Name { get; }
+
         public abstract FunctionResult GetResult(object[] args, Type[] generics);
+
+        public override string ToString()
+        {
+            return Name;
+        }
 
         private class ToActionFunction : Function
         {
+            public override string Name => $"{nameof(Function)}.{nameof(ToAction)}";
+
             public override FunctionResult GetResult(object[] args, Type[] generics)
             {
                 if (args.Length != 1 || args[0] is not InvokableFunction invokable)
@@ -82,6 +91,7 @@ namespace NetScript.Interpreter
 
         private class ToFuncFunction : Function
         {
+            public override string Name => $"{nameof(Function)}.{nameof(ToAction)}";
             public override FunctionResult GetResult(object[] args, Type[] generics)
             {
                 if (args.Length != 1 || args[0] is not InvokableFunction invokable)
@@ -148,6 +158,8 @@ namespace NetScript.Interpreter
 
         private class ToDelegateFunction : Function
         {
+            public override string Name => $"{nameof(Function)}.{nameof(ToDelegate)}";
+
             public override FunctionResult GetResult(object[] args, Type[] generics)
             {
                 if (generics is null || args is null || generics.Length != 1 || args.Length != 1 ||
@@ -201,6 +213,7 @@ namespace NetScript.Interpreter
 
     public class CustomFunction : InvokableFunction
     {
+        public override string Name { get; }
         public string[] Generics { get; }
         public string[] Args { get; }
         public byte[] Code { get; }
@@ -208,8 +221,9 @@ namespace NetScript.Interpreter
         
         private Runtime Package { get; }
 
-        public CustomFunction(string[] generics, string[] args, byte[] funcBc, Runtime pkg, VariableCollection vars)
+        public CustomFunction(string name, string[] generics, string[] args, byte[] funcBc, Runtime pkg, VariableCollection vars)
         {
+            Name = name;
             Generics = generics;
             Args = args;
             Code = funcBc;
@@ -257,6 +271,7 @@ namespace NetScript.Interpreter
 
     public class GenericFunction : InvokableFunction
     {
+        public override string Name { get; }
         public Function Base { get; }
         public Type[] Generics { get; }
 
@@ -268,6 +283,7 @@ namespace NetScript.Interpreter
             }
             Base = baseFunc;
             Generics = gens;
+            Name = $"{Base.Name}<[{string.Join(", ", Generics as object[])}]>";
         }
 
         public override FunctionResult GetResult(object[] args, Type[] generics)

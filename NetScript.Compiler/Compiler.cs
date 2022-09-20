@@ -13,6 +13,7 @@ namespace NetScript.Compiler
     public abstract class Compiler
     {
         public abstract ICollection<(Regex, TokenType)> Expressions { get; }
+        public abstract ICollection<SpecialConstructionRule> SpecialRules { get; }
         public abstract ICollection<ParsingRule> Rules { get; }
         public abstract ICollection<ICollection<BinaryOperationRule>> BinaryRules { get; }
         public abstract ICollection<UnaryOperationRule> UnaryRules { get; }

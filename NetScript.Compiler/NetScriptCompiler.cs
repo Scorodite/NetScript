@@ -16,6 +16,7 @@ namespace NetScript.Compiler
     public class NetScriptCompiler : Compiler
     {
         public override List<(Regex, TokenType)> Expressions { get; }
+        public override List<SpecialConstructionRule> SpecialRules { get; }
         public override List<ParsingRule> Rules { get; }
         public override List<ICollection<BinaryOperationRule>> BinaryRules { get; }
         public override List<UnaryOperationRule> UnaryRules { get; }
@@ -23,11 +24,13 @@ namespace NetScript.Compiler
         public NetScriptCompiler()
         {
             Expressions = new();
+            SpecialRules = new();
             Rules = new();
             BinaryRules = new();
             UnaryRules = new();
 
             BuildExpressions();
+            BuildSpecialRules();
             BuildRules();
             BuildBinaryRules();
             BuildUnaryRules();
@@ -102,11 +105,26 @@ namespace NetScript.Compiler
             Expressions.Add((new(@"break\b"), TokenType.Break));
             Expressions.Add((new(@"continue\b"), TokenType.Continue));
             Expressions.Add((new(@"output\b"), TokenType.Output));
+            Expressions.Add((new(@"throw\b"), TokenType.Throw));
             Expressions.Add((new(@"loop\b"), TokenType.Loop));
             Expressions.Add((new(@"try\b"), TokenType.Try));
             Expressions.Add((new(@"catch\b"), TokenType.Catch));
             Expressions.Add((new(@"loaddll\b"), TokenType.LoadDll));
             Expressions.Add((new(@"[A-Za-zА-Яа-я_][A-Za-zА-Яа-я_0-9]*"), TokenType.Name));
+        }
+
+        protected virtual void BuildSpecialRules()
+        {
+            SpecialRules.Add(new IfRule());
+            SpecialRules.Add(new LoopRule());
+            SpecialRules.Add(new ReturnRule());
+            SpecialRules.Add(new BreakRule());
+            SpecialRules.Add(new OutputRule());
+            SpecialRules.Add(new ThrowRule());
+            SpecialRules.Add(new WhileRule());
+            SpecialRules.Add(new ForRule());
+            SpecialRules.Add(new TryCatchRule());
+            SpecialRules.Add(new FuncRule());
         }
 
         protected virtual void BuildRules()
@@ -133,20 +151,12 @@ namespace NetScript.Compiler
             Rules.Add(new SingleTokenRule(TokenType.Field, t => new GetContextValueAST()));
             Rules.Add(new GetFieldRule());
             Rules.Add(new NewVariableRule());
-            Rules.Add(new FunctionRule());
-            Rules.Add(new ReturnRule());
-            Rules.Add(new BreakRule());
-            Rules.Add(new OutputRule());
+            Rules.Add(new UnnamedFunctionRule());
             Rules.Add(new ArrayRule());
             Rules.Add(new ListRule());
             Rules.Add(new InvokeRule());
             Rules.Add(new GetIndexRule());
             Rules.Add(new GenericRule());
-            Rules.Add(new IfRule());
-            Rules.Add(new WhileRule());
-            Rules.Add(new ForRule());
-            Rules.Add(new LoopRule());
-            Rules.Add(new TryCatchRule());
             Rules.Add(new LoadDllRule());
             Rules.Add(new ConstructorRule());
         }
@@ -328,15 +338,26 @@ namespace NetScript.Compiler
 
         public override ASTBase[] GetASTs(List<Token> tokens)
         {
-            List<List<Token>> tokensSplit = SplitTokens(tokens);
-
             List<ASTBase> res = new();
 
-            foreach (List<Token> line in tokensSplit)
+            for (int i = 0; i < tokens.Count; )
             {
-                ASTBase ast = GetAST(line);
-                //Console.WriteLine(ast);
-                res.Add(ast);
+                if (tokens[i].Type == TokenType.EOL)
+                {
+                    i++;
+                }
+                else if (TryGetSpecialAST(tokens, ref i, out var spec))
+                {
+                    res.Add(spec);
+                }
+                else
+                {
+                    int eolPos = FindToken(tokens, TokenType.EOL, i);
+                    if (eolPos == -1) eolPos = tokens.Count;
+                    List<Token> astTokens = tokens.GetRange(i, eolPos - i);
+                    res.Add(GetAST(astTokens));
+                    i = eolPos + 1;
+                }
             }
 
             return res.ToArray();
@@ -344,9 +365,20 @@ namespace NetScript.Compiler
 
         public override ASTBase GetAST(List<Token> tokens)
         {
+            if (tokens.Count == 0)
+            {
+                return EmptyAST.Instance;
+            }
             if (TryUnwrapGroup(tokens, out var unwraped))
             {
                 return GetAST(unwraped);
+            }
+            {
+                int i = 0;
+                if (TryGetSpecialAST(tokens, ref i, out var res) && i == tokens.Count)
+                {
+                    return res;
+                }
             }
             if (TryGetBinaryAST(tokens, out var binop))
             {
@@ -408,6 +440,20 @@ namespace NetScript.Compiler
             return res;
         }
 
+        protected virtual bool TryGetSpecialAST(List<Token> tokens, ref int i, out ASTBase res)
+        {
+            foreach (SpecialConstructionRule scr in SpecialRules)
+            {
+                if (scr.IsRight(tokens, i, this))
+                {
+                    res = scr.GetAST(tokens, ref i, this);
+                    return true;
+                }
+            }
+            res = null;
+            return false;
+        }
+
         protected virtual bool TryUnwrapGroup(List<Token> tokens, out List<Token> res)
         {
             res = new List<Token>(tokens);
@@ -431,7 +477,7 @@ namespace NetScript.Compiler
 
         protected virtual bool TryGetBinaryAST(IList<Token> tokens, out ASTBase res)
         {
-            foreach (ICollection<BinaryOperationRule> bors in BinaryRules)
+            foreach (IEnumerable<BinaryOperationRule> bors in BinaryRules)
             {
                 Stack<Token> depth = new();
                 if (bors.First().Reverse)

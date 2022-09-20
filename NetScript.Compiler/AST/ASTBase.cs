@@ -40,6 +40,22 @@ namespace NetScript.Compiler.AST
                 throw new CompilerException("Required statement that returns value", Index);
             }
         }
+
+        public static readonly GetVariableAST TypeObject = new("object");
+
+        public ASTBase NullIfEmpty() =>
+            this is EmptyAST ? new ConstantAST(null) : this;
+    }
+
+    public class EmptyAST : ASTBase
+    {
+        public override bool ReturnsValue => false;
+        public static readonly EmptyAST Instance = new();
+
+        public override void Compile(BinaryWriter writer, CompilerArgs args)
+        {
+            throw new CompilerException("Empty statement error");
+        }
     }
 
     public class ConstantAST : ASTBase
@@ -139,6 +155,28 @@ namespace NetScript.Compiler.AST
         public override string ToString()
         {
             return $"return {(Value is not ConstantAST con || con.Obj is not null ? Value.ToString() : string.Empty)}";
+        }
+    }
+
+    public class ThrowAST : ASTBase
+    {
+        public ASTBase Value { get; set; }
+        public override bool ReturnsValue => false;
+
+        public ThrowAST(ASTBase value)
+        {
+            Value = value;
+        }
+
+        public override void Compile(BinaryWriter writer, CompilerArgs args)
+        {
+            Value.ReturnOnly().Compile(writer, args);
+            writer.Write(Bytecode.Throw);
+        }
+
+        public override string ToString()
+        {
+            return $"throw {Value}";
         }
     }
 
@@ -360,13 +398,33 @@ namespace NetScript.Compiler.AST
         {
             Obj.ReturnOnly().Compile(writer, args);
 
-            foreach (ASTBase arg in Args)
+            if (Args.Length > 0)
             {
-                arg.ReturnOnly().Compile(writer, args);
-            }
+                if (Args.FirstOrDefault(a => a is not EmptyAST) is null)
+                {
+                    writer.Write(Bytecode.GetArrayType);
+                    writer.Write((byte)(Args.Length + 1));
+                }
+                else
+                {
+                    foreach (ASTBase arg in Args)
+                    {
+                        if (arg is EmptyAST)
+                        {
+                            throw new CompilerException("Tried to get empty index", Index);
+                        }
+                        arg.ReturnOnly().Compile(writer, args);
+                    }
 
-            writer.Write(Bytecode.GetIndex);
-            writer.Write((byte)Args.Length);
+                    writer.Write(Bytecode.GetIndex);
+                    writer.Write((byte)Args.Length);
+                }
+            }
+            else
+            {
+                writer.Write(Bytecode.GetArrayType);
+                writer.Write((byte)1);
+            }
         }
 
         public override string ToString()
@@ -492,12 +550,14 @@ namespace NetScript.Compiler.AST
 
     public class CreateFunctionAST : ASTBase
     {
+        public string Name { get; set; }
         public string[] Args { get; set; }
         public string[] Generics { get; set; }
         public ASTBase[] ASTs { get; set; }
 
-        public CreateFunctionAST(string[] args, string[] generics, ASTBase[] asts)
+        public CreateFunctionAST(string name, string[] args, string[] generics, ASTBase[] asts)
         {
+            Name = name;
             Args = args;
             Generics = generics;
             ASTs = asts;
@@ -506,6 +566,7 @@ namespace NetScript.Compiler.AST
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
             writer.Write(Bytecode.CreateFunction);
+            writer.Write(string.IsNullOrWhiteSpace(Name) ? args.UnnamedID : args.GetNameID(Name));
 
             writer.Write(Generics.Length);
             foreach (string gen in Generics)
@@ -523,11 +584,17 @@ namespace NetScript.Compiler.AST
             SizePosition sizePos = new(writer);
             Compiler.CompileAll(ASTs, writer, args);
             sizePos.SaveSize();
+
+            if (!string.IsNullOrWhiteSpace(Name))
+            {
+                writer.Write(Bytecode.NewVariable);
+                writer.Write(args.GetNameID(Name));
+            }
         }
 
         public override string ToString()
         {
-            return $"func{(Generics.Length > 0 ? $"<[{string.Join(", ", Generics as object[])}]>" : string.Empty)}" +
+            return $"func {Name} {(Generics.Length > 0 ? $"<[{string.Join(", ", Generics as object[])}]>" : string.Empty)}" +
                        $"{(Args.Length > 0 ? $"({string.Join(", ", Args as object[])})" : string.Empty)}" +
                        $"{(ASTs.Length > 0 ? $"{{ {string.Join("; ", ASTs as object[])} }}" : string.Empty)}";
         }
@@ -844,7 +911,7 @@ namespace NetScript.Compiler.AST
         {
             foreach (ASTBase item in Items)
             {
-                item.ReturnOnly().Compile(writer, args);
+                (item ?? TypeObject).ReturnOnly().Compile(writer, args);
             }
 
             Type.ReturnOnly().Compile(writer, args);
@@ -863,29 +930,102 @@ namespace NetScript.Compiler.AST
     {
         public ASTBase Type { get; set; }
         public ASTBase[] Items { get; set; }
+        public int Rank { get; set; }
 
-        public ArrayAST(ASTBase type, ASTBase[] items)
+        public ArrayAST(ASTBase type, ASTBase[] items, int rank)
         {
             Type = type;
             Items = items;
+            Rank = rank;
         }
 
         public override void Compile(BinaryWriter writer, CompilerArgs args)
         {
-            foreach (ASTBase item in Items)
+            if (Rank <= 1)
             {
-                item.ReturnOnly().Compile(writer, args);
+                foreach (ASTBase item in Items)
+                {
+                    item.ReturnOnly().Compile(writer, args);
+                }
+
+                (Type ?? TypeObject).ReturnOnly().Compile(writer, args);
+
+                writer.Write(Bytecode.CreateArray);
+                writer.Write((byte)1);
+                writer.Write((short)Items.Length);
+            }
+            else
+            {
+                int[] lenghts = GetLenghts(Rank);
+
+                CompileChildren(0, lenghts, writer, args);
+
+                (Type ?? TypeObject).ReturnOnly().Compile(writer, args);
+
+                writer.Write(Bytecode.CreateArray);
+                writer.Write((byte)Rank);
+
+                foreach (int len in lenghts)
+                {
+                    writer.Write((short)len);
+                }
+            }
+        }
+
+        protected int[] GetLenghts(int depth)
+        {
+            if (depth <= 1)
+            {
+                return new int[1] { Items.Length };
+            }
+            else if (Items.Length > 0 && Items.First() is ArrayAST subarr && subarr.Type is null && subarr.Rank <= 1)
+            {
+                int[] res = new int[depth];
+                res[0] = Items.Length;
+                int[] sub = subarr.GetLenghts(depth - 1);
+                sub.CopyTo(res, 1);
+                return res;
+            }
+            else
+            {
+                throw new CompilerException("Multidimensional array must contain arrays without type and rank clarification");
+            }
+        }
+        
+        protected void CompileChildren(int currRank, int[] lenghts, BinaryWriter writer, CompilerArgs args)
+        {
+            int len = lenghts[currRank];
+            if (Items.Length != len)
+            {
+                throw new CompilerException("Subarray of multidimensional array must contain same items count");
             }
 
-            Type.ReturnOnly().Compile(writer, args);
-
-            writer.Write(Bytecode.CreateArray);
-            writer.Write((short)Items.Length);
+            if (currRank == lenghts.Length - 1)
+            {
+                foreach (ASTBase item in Items)
+                {
+                    item.ReturnOnly().Compile(writer, args);
+                }
+            }
+            else
+            {
+                foreach (ASTBase item in Items)
+                {
+                    if (item is ArrayAST subarr && subarr.Type is null && subarr.Rank <= 1)
+                    {
+                        subarr.CompileChildren(currRank + 1, lenghts, writer, args);
+                    }
+                    else
+                    {
+                        throw new CompilerException("Subarray of multidimensional array must contain arrays without type and rank clarification");
+                    }
+                }
+            }
         }
 
         public override string ToString()
         {
-            return $"{{ {Type} : {string.Join(", ", Items as object[])} }}";
+            return $"{{ {Type} {(Rank > 1 ? Rank : null)}{(Type is not null || Rank > 1 ? " : " : null)}{string.Join(", ", Items as object[])} }}";
         }
     }
 }
