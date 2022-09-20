@@ -71,7 +71,7 @@ namespace NetScript.Compiler
             Names = new();
             Imports = new();
             Dlls = new();
-            Assemblies = new();
+            Assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
             Variables = new();
             AvariableImports = new()
             {
@@ -94,61 +94,62 @@ namespace NetScript.Compiler
                 ["char"] = typeof(char),
 
                 [nameof(List<object>)] = typeof(List<>),
+                [nameof(Dictionary<object, object>)] = typeof(Dictionary<,>),
                 [nameof(Console)] = typeof(Console),
                 [nameof(Math)] = typeof(Math),
                 [nameof(Interpreter.Range)] = typeof(Interpreter.Range),
                 [nameof(Interpreter.Function)] = typeof(Interpreter.Function),
             };
-
-            LoadAssemblies();
         }
 
-        private void LoadAssemblies()
+        private void LoadReferences(Assembly assembly)
         {
-            List<string> list = new ();
-            Stack<Assembly> stack = new();
-
-            stack.Push(Assembly.GetEntryAssembly());
-
-            do
+            Assemblies.Clear();
+            Stack<Assembly> asms = new();
+            asms.Push(assembly);
+            while (asms.Count > 0)
             {
-                var asm = stack.Pop();
+                Assembly curr = asms.Pop();
 
-                Assemblies.Add(asm);
+                Assemblies.Add(curr);
 
-                foreach (var reference in asm.GetReferencedAssemblies())
+                foreach (AssemblyName re in curr.GetReferencedAssemblies())
                 {
-                    if (!list.Contains(reference.FullName))
+                    try
                     {
-                        try
-                        {
-                            stack.Push(Assembly.Load(reference));
-                            list.Add(reference.FullName);
-                        }
-                        catch
-                        {
+                        Assembly asm = Assembly.Load(re);
 
+                        if (!Assemblies.Contains(asm))
+                        {
+                            asms.Push(asm);
                         }
                     }
+                    catch { }
                 }
             }
-            while (stack.Count > 0);
         }
 
         public void LoadDLL(string path)
         {
             if (!path.Contains(':') && Assemblies.Count > 0)
             {
-                string fullpath = Path.Combine(Path.GetDirectoryName(Assemblies.First().Location), path);
-                if (File.Exists(fullpath))
+                HashSet<string> dirs = new(
+                    from asm in Assemblies
+                    select Path.GetDirectoryName(asm.Location)
+                );
+                dirs.Add(Directory.GetCurrentDirectory());
+                foreach (string dir in dirs)
                 {
-                    Assemblies.Add(Assembly.LoadFrom(fullpath));
-                    Dlls.Add(fullpath);
-                    return;
+                    string fullpath = Path.Combine(dir, path);
+                    if (File.Exists(fullpath))
+                    {
+                        LoadReferences(Assembly.LoadFrom(fullpath));
+                        Dlls.Add(path);
+                        return;
+                    }
                 }
             }
-            Assemblies.Add(Assembly.LoadFrom(path));
-            Dlls.Add(path);
+            throw new FileNotFoundException($"Can not find {path}");
         }
 
         public void AddVariable(string name)

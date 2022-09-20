@@ -5,6 +5,7 @@ namespace NetScript.Core
     public enum Bytecode : byte
     {
         ClearStack,
+        PopStack,
         PushConst,
         PushName,
         PushNull,
@@ -54,7 +55,7 @@ namespace NetScript.Core
 
         ConstByte, ConstSbyte, ConstShort, ConstUShort, ConstInt, ConstUInt,
         ConstLong, ConstULong, ConstFloat, ConstDecimal, ConstDouble,
-        ConstChar, ConstString
+        ConstChar, ConstString,
     }
 
     public static class BinaryWriterExtensions

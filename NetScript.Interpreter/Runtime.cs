@@ -33,6 +33,15 @@ namespace NetScript.Interpreter
         public Dictionary<int, byte[]> CodeSectors { get; private set; }
 
         private List<Context> Content { get; set; }
+        private readonly Lazy<HashSet<string>> DllPaths = new(() =>
+        {
+            HashSet<string> dirs = new(
+                    from asm in AppDomain.CurrentDomain.GetAssemblies()
+                    select Path.GetDirectoryName(asm.Location)
+                );
+            dirs.Add(Directory.GetCurrentDirectory());
+            return dirs;
+        });
 
         #region IList
         public Context this[int index] { get => Content[index]; set => Content[index] = value; }
@@ -108,7 +117,7 @@ namespace NetScript.Interpreter
             int dlls = Reader.ReadInt32();
             for (int i = 0; i < dlls; i++)
             {
-                Assembly.LoadFrom(Reader.ReadString());
+                LoadAssembly(Reader.ReadString());
             }
 
             int imports = Reader.ReadInt32();
@@ -128,6 +137,20 @@ namespace NetScript.Interpreter
             {
                 Constants[i] = ReadConst(Reader);
             }
+        }
+
+        private void LoadAssembly(string path)
+        {
+            foreach (string dir in DllPaths.Value)
+            {
+                string fullpath = Path.Combine(dir, path);
+                if (File.Exists(fullpath))
+                {
+                    Assembly.LoadFrom(fullpath);
+                    return;
+                }
+            }
+            throw new FileNotFoundException($"Can not find {path}");
         }
 
         public void CreateSubcontext(Stream stream)
@@ -186,7 +209,7 @@ namespace NetScript.Interpreter
                 {
                     Context loop = Content[i];
                     long after = loop.MoveAfter == -1 ? loop.End : loop.MoveAfter;
-                    object ret = Current.Stack.Count > 0 ? Current.Stack.Peek() : null;
+                    object ret = Stack.Count > 0 ? Stack.Peek() : null;
                     Content.RemoveRange(i, Content.Count - i);
                     Stream.Position = after;
                     Stack.Push(ret);

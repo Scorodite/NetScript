@@ -749,7 +749,7 @@ namespace NetScript.Compiler.AST
             });
 
             enumVar.Compile(writer, args);
-            writer.Write(Bytecode.ClearStack);
+            writer.Write(Bytecode.PopStack);
             writer.Write(Bytecode.Loop);
             SizePosition sizePos = new(writer);
             nextEnumVar.Compile(writer, args);

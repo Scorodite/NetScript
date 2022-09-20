@@ -351,7 +351,7 @@ namespace NetScript.Compiler.Rules
         public override bool IsRight(List<Token> tokens, Compiler compiler)
         {
             int openQuote = compiler.FindTokenRev(tokens, TokenType.OpeningQuote, tokens.Count - 2);
-            return tokens.Last().Type == TokenType.ClosingQuote && openQuote > 2 && tokens[openQuote - 1].Type == TokenType.Field;
+            return tokens.Last().Type == TokenType.ClosingQuote && openQuote > 1 && tokens[openQuote - 1].Type == TokenType.Field;
         }
 
         public override ASTBase GetAST(List<Token> tokens, Compiler compiler)
