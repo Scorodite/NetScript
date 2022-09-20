@@ -73,7 +73,7 @@ var b = a to byte;
 Console.WriteLine(typeof a); // System.Int32
 Console.WriteLine(typeof b); // System.Byte
 ```
-### Creating object from C# classes
+### Creating C# objects
 ```
 var obj = object();
 var exp = expando();
@@ -243,7 +243,7 @@ func onClick(sender, ev) {
 
 button.Click = onClick;
 
-// To be able to remove event you must store onClick delegate
+// To be able to remove event you must store delegate object
 import System.EventHandler;
 
 var onClickDelegate = Function.ToDelegate<[EventHandler]>(onClick);
@@ -365,7 +365,7 @@ Console.WriteLine(exp2.age);
 // Also you can get variable of object rightly after constructor
 Console.WriteLine(expando().{
 	.name = "Third expando name";
-}.name);
+}.name); // Third expando name
 
 // You can use another expressions in constructors
 import System.Random;
