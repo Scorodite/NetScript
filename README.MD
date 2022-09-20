@@ -1,7 +1,7 @@
-#NetScript
+# NetScript
 NetScript is C# embedded programming language that can operate with .NET classes and objects.
 It contains bytecode compiler and interpreter
-##Usage
+## Usage
 ```
 using NetScript;
 
@@ -16,9 +16,9 @@ namespace Test
 	}
 }
 ```
-##Syntax
+## Syntax
 
-###Constants
+### Constants
 Avariable constants:
 - null: `null`
 - bool: `true` `false`
@@ -35,12 +35,12 @@ Avariable constants:
 - double: `0d` `1.123D` `2.345`
 - char: `'c'` `'\n'`
 - string: `"Sample string"`
-###Variables
+### Variables
 ```
 var variable = "Variable value";
 Console.WriteLine(variable); // Variable value
 ```
-###Operators
+### Operators
 - C# binary operators: `+` `-` `*` `/` `%` `&&` `||` `??` `&` `|` `^` `==` `!=` `>` `<` `>=` `<=` `..` `is`
 - C# unary operators: `-` `~` `!`
 - `typeof` unary operator that outputs type of object
@@ -73,7 +73,7 @@ var b = a to byte;
 Console.WriteLine(typeof a); // System.Int32
 Console.WriteLine(typeof b); // System.Byte
 ```
-###Creating object from C# classes
+### Creating object from C# classes
 ```
 var obj = object();
 var exp = expando();
@@ -81,7 +81,7 @@ var exp = expando();
 Console.WriteLine(obj); // System.Object
 Console.WriteLine(exp); // System.Dynamic.ExpandoObject
 ```
-###Getting and setting fields, properties, invoking methods
+### Getting and setting fields, properties, invoking methods
 ```
 var obj = expando();
 obj.val1 = "Value 1";
@@ -90,7 +90,7 @@ obj.val2 = "Value 1";
 Console.WriteLine(obj.val1);
 Console.WriteLine(obj.val2);
 ```
-###Using generics
+### Using generics
 ```
 var listOfStringsType = List<[string]>;
 var listOfStrings = listOfStringsType();
@@ -101,7 +101,7 @@ Console.WriteLine(listOfStrings); // System.Collections.Generic.List`1[System.St
 var listOfStrings = List<[string]>();
 Console.WriteLine(listOfStrings); // System.Collections.Generic.List`1[System.String]
 ```
-###Importing C# classes
+### Importing C# classes
 ```
 import System.EventArgs;
 // It is necessary to specify generics count
@@ -138,7 +138,7 @@ NetScript has preimported classes:
 - `System.Math` as `Math`
 - `NetScript.Interpreter.Range` as `Range`
 - `NetScript.Interpreter.Function` as `Function`
-###Importing .NET dlls
+### Importing .NET dlls
 ```
 loaddll "System.Collections.NonGeneric.dll";
 
@@ -148,7 +148,7 @@ Console.WriteLine(Stack());
 loaddll "CustomLib.dll";
 import CustomLib.*;
 ```
-###Functions
+### Functions
 ```
 // Empty function
 func empty
@@ -195,7 +195,7 @@ all<[string]>(123);
 // a = 123
 // T1 = System.String
 ```
-###Converting NetScript functions into C# delegates
+### Converting NetScript functions into C# delegates
 ```
 import System.EventArgs;
 import System.EventHandler;
@@ -231,7 +231,7 @@ var funcOutput = csfunc(1b, 3b);
 Console.WriteLine(funcOutput); // 4
 Console.WriteLine(typeof funcOutput); // System.Int32
 ```
-###Adding and removing events
+### Adding and removing events
 ```
 import System.Windows.Forms.Button;
 
@@ -252,7 +252,7 @@ button.Click = onClickDelegate;
 
 button.Click.Remove(onClickDelegate);
 ```
-###Lists
+### Lists
 ```
 var objectList = ["Sample string", 1, null];
 
@@ -273,7 +273,7 @@ Console.WriteLine(emptyIntegerList.Count); // 0
 
 Console.WriteLine(objectList[0]); // Sample string
 ```
-###Arrays
+### Arrays
 ```
 var objectArray = {"Sample string", -1, null};
 
@@ -297,7 +297,7 @@ Console.WriteLine(integerArray is int[]); // True
 
 Console.WriteLine(objectArray[1]); // -1
 ```
-###Multidimensional arrays
+### Multidimensional arrays
 ```
 var objectArray2d = { 2 :
 	{'A', 2, null},
@@ -342,7 +342,7 @@ Console.WriteLine(integerArray3d);
 Console.WriteLine(objectArray2d[1, 0]);
 Console.WriteLine(objectArray3d[0, 1, 0]);
 ```
-###Constructor
+### Constructor
 ```
 var exp = expando().{
 	.name = "Example expando name";
@@ -378,7 +378,7 @@ Console.WriteLine(expando().{
 	.age = r.Next(18, 99);
 }.age); // 33
 ```
-###If
+### If
 ```
 var a = int.Parse(Console.ReadLine()); // 54
 
@@ -394,7 +394,7 @@ else {
 // Console:
 // a < 0 || a > 2
 ```
-###While
+### While
 ```
 var i = 0;
 while i < 100 {
@@ -405,7 +405,7 @@ while i < 100 {
 // ...
 // 100
 ```
-###For
+### For
 ```
 var list = [string : "El1", "El2", "El3"];
 
@@ -417,7 +417,7 @@ for i in list {
 // El2
 // El3
 ```
-###Loop, break and continue
+### Loop, break and continue
 ```
 var i = 0;
 
@@ -452,7 +452,7 @@ loop {
 // 97
 // 99
 ```
-###Try, catch and throw
+### Try, catch and throw
 ```
 import System.Exception;
 
@@ -492,7 +492,7 @@ try {
     Console.WriteLine(ex.Object); // System.Dynamic.ExpandoObject
 }
 ```
-###Output
+### Output
 ```
 //You can exit from current context using "output" statement
 
@@ -524,6 +524,6 @@ Console.WriteLine(expando().{
     output .name;
 }); // Expando name
 ```
-##License
+## License
 
 This project is licensed under [GPLv3](LICENSE).
