@@ -105,7 +105,7 @@ namespace NetScript.Interpreter
 
         public Runtime(Stream root)
         {
-            Content = new() { new(root) };
+            Content = new() { new("Root", root) };
             CodeSectors = new();
 
             Names = new string[Reader.ReadInt32()];
@@ -153,29 +153,29 @@ namespace NetScript.Interpreter
             throw new FileNotFoundException($"Can not find {path}");
         }
 
-        public void CreateSubcontext(Stream stream)
+        public void CreateSubcontext(string name, Stream stream)
         {
-            Content.Add(new(stream, Content.Last()));
+            Content.Add(new(name, stream, Content.Last()));
         }
 
-        public void CreateSubcontext(Stream stream, long begin, long end)
+        public void CreateSubcontext(string name, Stream stream, long begin, long end)
         {
-            Content.Add(new(stream, Current, begin, end));
+            Content.Add(new(name, stream, Current, begin, end));
         }
 
-        public void CreateSubcontext(Stream stream, long begin, long end, ContextType type)
+        public void CreateSubcontext(string name, Stream stream, long begin, long end, ContextType type)
         {
-            Content.Add(new(stream, Current, begin, end) { Type = type });
+            Content.Add(new(name, stream, Current, begin, end) { Type = type });
         }
 
-        public void CreateSubcontext(Stream stream, long begin, long end, long moveAfter)
+        public void CreateSubcontext(string name, Stream stream, long begin, long end, long moveAfter)
         {
-            Content.Add(new(stream, Current, begin, end, moveAfter));
+            Content.Add(new(name, stream, Current, begin, end, moveAfter));
         }
 
-        public void CreateSubcontext(Stream stream, long begin, long end, long moveAfter, ContextType type)
+        public void CreateSubcontext(string name, Stream stream, long begin, long end, long moveAfter, ContextType type)
         {
-            Content.Add(new(stream, Current, begin, end, moveAfter) { Type = type });
+            Content.Add(new(name, stream, Current, begin, end, moveAfter) { Type = type });
         }
 
         public void RemoveLast()
@@ -299,7 +299,7 @@ namespace NetScript.Interpreter
                 {
                     Context tryCont = Content[i];
                     Content.RemoveRange(i, Content.Count - i);
-                    CreateSubcontext(tryCont.Stream, tryCont.End, tryCont.MoveAfter);
+                    CreateSubcontext("Catch " + (ex?.GetType() ?? typeof(void)), tryCont.Stream, tryCont.End, tryCont.MoveAfter);
                     tryCont.Stream.Position = tryCont.End;
                     Current.Return = ex;
                     Current.Variables.Add(tryCont.ReservedVariable, ex);

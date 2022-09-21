@@ -201,7 +201,7 @@ namespace NetScript.Interpreter
                     vars.Add(Generics[i], generics[i]);
                 }
             }
-            return new(new Context(new ByteArrayReader(Code)) { Variables = vars, Parent = Package.Current, Type = ContextType.Function });
+            return new(new Context(Name, new ByteArrayReader(Code)) { Variables = vars, Parent = Package.Current, Type = ContextType.Function });
         }
 
         public override object Invoke(object[] args, Type[] generics)

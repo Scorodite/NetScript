@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Dynamic;
-using System.Collections;
+using System.Text;
 using System.Collections.Generic;
 using System.Reflection;
 using NetScript.Core;
@@ -32,14 +32,35 @@ namespace NetScript.Interpreter
                     ExecuteUnsafe(p);
                     break;
                 }
-                catch (Exception ex)
+                catch (Exception _ex)
                 {
+                    Exception ex = _ex is TargetInvocationException ?
+                        _ex.InnerException :
+                        _ex;
+                    ex = ex is InterpreterException ? ex.InnerException : ex;
                     if (!p.TryHandle(ex))
                     {
-                        throw;
+                        throw CreateTraceback(p, ex);
                     }
                 }
             }
+        }
+
+        private static Exception CreateTraceback(Runtime p, Exception ex)
+        {
+            StringBuilder traceback = new();
+            
+            for (int i = 0; i < p.Count; i++)
+            {
+                traceback.Append(new string(' ', i * 2));
+                traceback.Append(p[i]?.Name ?? "Unknown");
+                traceback.Append('\n');
+            }
+            string newlines = "\n" + new string(' ', p.Count * 2);
+            traceback.Append(new string(' ', p.Count * 2));
+            traceback.Append(string.Join(newlines, ex.ToString().Split('\n')));
+
+            return new InterpreterException(traceback.ToString(), ex);
         }
 
         private static void ExecuteUnsafe(Runtime p)
@@ -438,7 +459,7 @@ namespace NetScript.Interpreter
             {
                 if (cbool)
                 {
-                    p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + falseSkip, p.Stream.Position + trueSkip);
+                    p.CreateSubcontext("If", p.Stream, p.Stream.Position, p.Stream.Position + falseSkip, p.Stream.Position + trueSkip);
                 }
                 else
                 {
@@ -460,13 +481,13 @@ namespace NetScript.Interpreter
             {
                 if (cbool)
                 {
-                    p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + sizeTrue,
+                    p.CreateSubcontext("If", p.Stream, p.Stream.Position, p.Stream.Position + sizeTrue,
                         p.Stream.Position + sizeTrue + sizeFalse);
                 }
                 else
                 {
                     p.Stream.Position += sizeTrue;
-                    p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + sizeFalse);
+                    p.CreateSubcontext("Else", p.Stream, p.Stream.Position, p.Stream.Position + sizeFalse);
                 }
             }
             else
@@ -478,7 +499,7 @@ namespace NetScript.Interpreter
         private static void BC_Loop(Runtime p)
         {
             int size = p.Reader.ReadInt32();
-            p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + size, ContextType.Loop);
+            p.CreateSubcontext("Loop", p.Stream, p.Stream.Position, p.Stream.Position + size, ContextType.Loop);
         }
 
         private static void BC_Output(Runtime p)
@@ -524,7 +545,7 @@ namespace NetScript.Interpreter
             string exName = p.Names[p.Reader.ReadInt32()];
             int tryLen = p.Reader.ReadInt32();
             int catchLen = p.Reader.ReadInt32();
-            p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + tryLen, p.Stream.Position + tryLen + catchLen, ContextType.TryCatch);
+            p.CreateSubcontext("Try", p.Stream, p.Stream.Position, p.Stream.Position + tryLen, p.Stream.Position + tryLen + catchLen, ContextType.TryCatch);
             p.Current.ReservedVariable = exName;
         }
 
@@ -532,7 +553,7 @@ namespace NetScript.Interpreter
         {
             int size = p.Reader.ReadInt32();
             object obj = p.Stack.Pop();
-            p.CreateSubcontext(p.Stream, p.Stream.Position, p.Stream.Position + size);
+            p.CreateSubcontext("Constructor " + (obj?.GetType() ?? typeof(void)), p.Stream, p.Stream.Position, p.Stream.Position + size);
             p.Current.Return = obj;
         }
 

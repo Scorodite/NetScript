@@ -25,8 +25,9 @@ namespace NetScript.Interpreter
 
         public object Return { get; set; }
 
-        public Context(Stream stream)
+        public Context(string name, Stream stream)
         {
+            Name = name;
             Stream = stream;
             Reader = new(Stream);
             Stack = new();
@@ -37,19 +38,19 @@ namespace NetScript.Interpreter
             MoveAfter = -1;
         }
 
-        public Context(Stream stream, Context parent) : this(stream)
+        public Context(string name, Stream stream, Context parent) : this(name, stream)
         {
             Parent = parent;
             Variables.Parent = parent.Variables;
         }
 
-        public Context(Stream stream, Context parent, long begin, long end) : this(stream, parent)
+        public Context(string name, Stream stream, Context parent, long begin, long end) : this(name, stream, parent)
         {
             Begin = begin;
             End = end;
         }
 
-        public Context(Stream stream, Context parent, long begin, long end, long moveAfter) : this(stream, parent)
+        public Context(string name, Stream stream, Context parent, long begin, long end, long moveAfter) : this(name, stream, parent)
         {
             Begin = begin;
             End = end;
