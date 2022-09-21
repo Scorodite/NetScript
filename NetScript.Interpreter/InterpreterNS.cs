@@ -37,8 +37,7 @@ namespace NetScript.Interpreter
                     Exception ex = _ex is TargetInvocationException ?
                         _ex.InnerException :
                         _ex;
-                    ex = ex is InterpreterException ? ex.InnerException : ex;
-                    if (!p.TryHandle(ex))
+                    if (!p.TryHandle(ex is InterpreterException ? ex.InnerException : ex))
                     {
                         throw CreateTraceback(p, ex);
                     }
@@ -60,7 +59,7 @@ namespace NetScript.Interpreter
             traceback.Append(new string(' ', p.Count * 2));
             traceback.Append(string.Join(newlines, ex.ToString().Split('\n')));
 
-            return new InterpreterException(traceback.ToString(), ex);
+            return new InterpreterException(traceback.ToString(), ex is InterpreterException ? ex.InnerException : ex);
         }
 
         private static void ExecuteUnsafe(Runtime p)
@@ -124,7 +123,7 @@ namespace NetScript.Interpreter
                     case Bytecode.CreateList: BC_CreateList(p); break;
                     case Bytecode.CreateArray: BC_CreateArray(p); break;
                     case Bytecode.GetArrayType: BC_GetArrayType(p); break;
-                    case Bytecode.Throw: BC_Throw(p); return;
+                    case Bytecode.Throw: BC_Throw(p); break;
                     case Bytecode.AddSubcontext:
                         throw new NotImplementedException();
                     #region Operators
@@ -628,18 +627,24 @@ namespace NetScript.Interpreter
         private static void BC_Throw(Runtime p)
         {
             object obj = p.Stack.Pop();
+            Exception exception;
 
             if (obj is Exception ex)
             {
-                throw ex;
+                exception = ex;
             }
             else if (obj is string msg)
             {
-                throw new Exception(msg);
+                exception = new Exception(msg);
             }
             else
             {
-                throw new NotThrowableException(obj);
+                exception = new NotThrowableException(obj);
+            }
+
+            if (!p.TryHandle(exception))
+            {
+                throw exception;
             }
         }
 
