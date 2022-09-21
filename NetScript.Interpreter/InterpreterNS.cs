@@ -712,7 +712,7 @@ namespace NetScript.Interpreter
             {
                 for (int i = 0; i < a.Length; i++)
                 {
-                     if (!(a[i] == typeof(void) && b[i].IsValueType) && !a[i].IsSubclassOf(b[i]) && a[i] != b[i])
+                     if (!(a[i] == typeof(void) && b[i].IsValueType) && !b[i].IsAssignableFrom(a[i]) && a[i] != b[i])
                     {
                         return false;
                     }
