@@ -189,7 +189,7 @@ namespace NetScript.Compilation
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new SingleByteBinOpRule(TokenType.NullCoalescing, Bytecode.NullCoalescing),
+                new CustomBinaryOperationRule(TokenType.NullCoalescing, (a, b , p) => new NullCoalescingAST(a, b) { Index = p }),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
