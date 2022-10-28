@@ -1,7 +1,6 @@
 ﻿using NetScript.Compilation.Tokens;
 using NetScript.Compilation.Rules;
 using NetScript.Compilation.AST;
-using NetScript.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -169,12 +168,12 @@ namespace NetScript.Compilation
 
         protected virtual void BuildUnaryRules()
         {
-            UnaryRules.Add(new(TokenType.Sub, typeof(RevAST)));
-            UnaryRules.Add(new(TokenType.BinRev, typeof(BinRevAST)));
-            UnaryRules.Add(new(TokenType.Not, typeof(NotAST)));
-            UnaryRules.Add(new(TokenType.GetType, typeof(GetTypeAST)));
-            UnaryRules.Add(new(TokenType.GetName, typeof(GetNameAST)));
-            UnaryRules.Add(new(TokenType.Default, typeof(DefaultAST)));
+            UnaryRules.Add(new SingleByteUnOpRule(TokenType.Sub, Bytecode.Rev));
+            UnaryRules.Add(new SingleByteUnOpRule(TokenType.BinRev, Bytecode.BinRev));
+            UnaryRules.Add(new SingleByteUnOpRule(TokenType.Not, Bytecode.Not));
+            UnaryRules.Add(new SingleByteUnOpRule(TokenType.GetType, Bytecode.GetTypeObj));
+            UnaryRules.Add(new CustomUnaryOperationRule(TokenType.GetName, (a, p) => new GetNameAST(a) { Index = p }));
+            UnaryRules.Add(new SingleByteUnOpRule(TokenType.Default, Bytecode.Default));
         }
 
         protected virtual void BuildBinaryRules()
@@ -185,62 +184,62 @@ namespace NetScript.Compilation
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.Convert, typeof(ConvertAST)), 
-                new(TokenType.Range, typeof(RangeAST)), 
+                new SingleByteBinOpRule(TokenType.Convert, Bytecode.Convert),
+                new SingleByteBinOpRule(TokenType.Range, Bytecode.Range), 
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.NullCoalescing, typeof(NullCoalescingAST)),
+                new SingleByteBinOpRule(TokenType.NullCoalescing, Bytecode.NullCoalescing),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.Or, typeof(OrAST)),
+                new CustomBinaryOperationRule(TokenType.Or, (a, b, p) => new OrAST(a, b) { Index = p }),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.And, typeof(AndAST)),
+                new CustomBinaryOperationRule(TokenType.And, (a, b, p) => new AndAST(a, b) { Index = p }),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.BinOr, typeof(BinOrAST)),
+                new SingleByteBinOpRule(TokenType.BinOr, Bytecode.BinOr),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.BinXor, typeof(BinXorAST)),
+                new SingleByteBinOpRule(TokenType.BinXor, Bytecode.BinXor),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.BinAnd, typeof(BinAndAST)),
+                new SingleByteBinOpRule(TokenType.BinAnd, Bytecode.BinAnd),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.NotEqual, typeof(NotEqualAST)),
-                new(TokenType.Equal, typeof(EqualAST)),
+                new SingleByteBinOpRule(TokenType.NotEqual, Bytecode.NotEqual),
+                new SingleByteBinOpRule(TokenType.Equal, Bytecode.Equal),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.IsType, typeof(IsTypeAST)),
-                new(TokenType.IsNotType, typeof(IsNotTypeAST)),
-                new(TokenType.Less, typeof(LessAST)),
-                new(TokenType.Greater, typeof(GreaterAST)),
-                new(TokenType.LessOrEqual, typeof(LessOrEqualAST)),
-                new(TokenType.GreaterOrEqual, typeof(GreaterOrEqualAST)),
+                new SingleByteBinOpRule(TokenType.IsType, Bytecode.IsType),
+                new CustomBinaryOperationRule(TokenType.IsNotType, (a, b, p) => new IsNotTypeAST(a, b) { Index = p }),
+                new SingleByteBinOpRule(TokenType.Less, Bytecode.Less),
+                new SingleByteBinOpRule(TokenType.Greater, Bytecode.Greater),
+                new SingleByteBinOpRule(TokenType.LessOrEqual, Bytecode.LessOrEqual),
+                new SingleByteBinOpRule(TokenType.GreaterOrEqual, Bytecode.GreaterOrEqual),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.ShiftLeft, typeof(ShiftLeftAST)),
-                new(TokenType.ShiftRight, typeof(ShiftRightAST)),
+                new SingleByteBinOpRule(TokenType.ShiftLeft, Bytecode.ShiftLeft),
+                new SingleByteBinOpRule(TokenType.ShiftRight, Bytecode.ShiftRight),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.Sum, typeof(SumAST)),
-                new(TokenType.Sub, typeof(SubAST)),
+                new SingleByteBinOpRule(TokenType.Sum, Bytecode.Sum),
+                new SingleByteBinOpRule(TokenType.Sub, Bytecode.Sub),
             });
             BinaryRules.Add(new List<BinaryOperationRule>()
             {
-                new(TokenType.Mul, typeof(MulAST)),
-                new(TokenType.Div, typeof(DivAST)),
-                new(TokenType.Mod, typeof(ModAST)),
+                new SingleByteBinOpRule(TokenType.Mul, Bytecode.Mul),
+                new SingleByteBinOpRule(TokenType.Div, Bytecode.Div),
+                new SingleByteBinOpRule(TokenType.Mod, Bytecode.Mod),
             });
         }
 

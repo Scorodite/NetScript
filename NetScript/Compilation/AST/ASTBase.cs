@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using NetScript.Core;
 using System.Reflection;
 
 namespace NetScript.Compilation.AST
@@ -702,7 +701,7 @@ namespace NetScript.Compilation.AST
         {
             writer.Write(Bytecode.Loop);
             SizePosition sizePos = new(writer);
-            new IfAST(new[] { (new ASTBase[] { new BreakAST(new ConstantAST(null)) }, new NotAST(Condition) as ASTBase) }).Compile(writer, args);
+            new IfAST(new[] { (new ASTBase[] { new BreakAST(new ConstantAST(null)) }, new SingleBytecodeUnOpAST(Condition, Bytecode.Not, "!") as ASTBase) }).Compile(writer, args);
             writer.Write(Bytecode.ClearStack);
 
             Compiler.CompileAll(ASTs, writer, args);
@@ -742,10 +741,10 @@ namespace NetScript.Compilation.AST
                 ));
             IfAST nextEnumVar = new(new[] {
                 (new ASTBase[] { new BreakAST(new ConstantAST(null)) },
-                new NotAST(new InvokeAST(new GetFieldAST(
+                new SingleBytecodeUnOpAST(new InvokeAST(new GetFieldAST(
                     new GetVariableAST(enumVar.Name),
                     nameof(IEnumerator<object>.MoveNext)
-                ))) as ASTBase)
+                )), Bytecode.Not, "!") as ASTBase)
             });
 
             enumVar.Compile(writer, args);

@@ -11,28 +11,13 @@ namespace NetScript.Compilation.Rules
     /// <summary>
     /// Parsing rule of binary operations
     /// </summary>
-    public class BinaryOperationRule
+    public abstract class BinaryOperationRule
     {
         public TokenType Operator { get; }
-        public Type ASTBinOp { get; }
         public bool Reverse { get; set; }
-
-        public BinaryOperationRule(TokenType op, Type astbinop) : this(op, astbinop, false) { }
-
-        public BinaryOperationRule(TokenType op, Type astbinop, bool rev)
-        {
-            if (!astbinop.IsSubclassOf(typeof(BinaryOperationAST)))
-            {
-                throw new ArgumentException($"{nameof(astbinop)} must be subclass of {nameof(BinaryOperationAST)}");
-            }
-            Operator = op;
-            ASTBinOp = astbinop;
-            Reverse = rev;
-        }
 
         protected BinaryOperationRule(TokenType op)
         {
-            ASTBinOp = typeof(void);
             Operator = op;
         }
 
@@ -41,19 +26,47 @@ namespace NetScript.Compilation.Rules
             return tokens[index].Type == Operator;
         }
 
-        public virtual ASTBase GetAST(IList<Token> tcoll, Compiler compiler, int index)
+        public abstract ASTBase GetAST(IList<Token> tcoll, Compiler compiler, int index);
+    }
+
+    public class SingleByteBinOpRule : BinaryOperationRule
+    {
+        public Bytecode Byte { get; }
+
+        public SingleByteBinOpRule(TokenType op, Bytecode bc) : this(op, bc, false) { }
+
+        public SingleByteBinOpRule(TokenType op, Bytecode bc, bool rev) : base(op)
+        {
+            Byte = bc;
+            Reverse = rev;
+        }
+
+        public override ASTBase GetAST(IList<Token> tcoll, Compiler compiler, int index)
         {
             List<Token> list = tcoll is List<Token> tcolllist ? tcolllist : new(tcoll);
             ASTBase a = compiler.GetAST(list.GetRange(0, index));
             ASTBase b = compiler.GetAST(list.GetRange(index + 1, list.Count - index - 1));
 
-            BinaryOperationAST? op = (BinaryOperationAST?)Activator.CreateInstance(ASTBinOp, new object[] { a, b });
-            if (op is null)
-            {
-                throw new CompilerException("Failed to create " + ASTBinOp + " instace for binary operation", list[index].Index);
-            }
-            op.Index = list[index].Index;
-            return op;
+            return new SingleBytecodeBinOpAST(a, b, Byte, tcoll[index].Value) { Index = list[index].Index };
+        }
+    }
+
+    public class CustomBinaryOperationRule : BinaryOperationRule
+    {
+        public Func<ASTBase, ASTBase, int, ASTBase> Func { get; }
+
+        public CustomBinaryOperationRule(TokenType op, Func<ASTBase, ASTBase, int, ASTBase> func) : base(op)
+        {
+            Func = func;
+        }
+
+        public override ASTBase GetAST(IList<Token> tcoll, Compiler compiler, int index)
+        {
+            List<Token> list = tcoll is List<Token> tcolllist ? tcolllist : new(tcoll);
+            ASTBase a = compiler.GetAST(list.GetRange(0, index));
+            ASTBase b = compiler.GetAST(list.GetRange(index + 1, list.Count - index - 1));
+
+            return Func(a, b, list[index].Index);
         }
     }
 

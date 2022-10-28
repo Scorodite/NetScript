@@ -56,7 +56,7 @@ namespace NetScript.Interpretation
                 Start = start;
                 End = end;
                 Step = step;
-                Curr = start - (Step > 0 ? 1 : Step < 0 ? -1 : 0);
+                Curr = start - (Step > 0 ? Step : Step < 0 ? -Step : 0);
             }
 
             public int Current => Curr;
@@ -77,7 +77,7 @@ namespace NetScript.Interpretation
 
             public void Reset()
             {
-                Curr = Start;
+                Curr = Start - (Step > 0 ? Step : Step < 0 ? -Step : 0);
             }
         }
     }

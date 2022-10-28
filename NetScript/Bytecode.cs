@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace NetScript.Core
+namespace NetScript
 {
     public enum Bytecode : byte
     {

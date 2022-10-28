@@ -1,5 +1,4 @@
-﻿using NetScript.Core;
-using System.IO;
+﻿using System.IO;
 
 namespace NetScript.Compilation.AST
 {
@@ -22,36 +21,21 @@ namespace NetScript.Compilation.AST
         }
     }
 
-    public class RevAST : UnaryOperationAST
+    public class SingleBytecodeUnOpAST : UnaryOperationAST
     {
-        public RevAST(ASTBase a) : base(a) { }
-        public override string ToString() => $"-{A}";
-        public override void Compile(BinaryWriter writer, CompilerArgs args) =>
-            CompileA(Bytecode.Rev, writer, args);
-    }
+        public Bytecode Byte { get; set; }
+        public string Operator { get; set; }
 
-    public class BinRevAST : UnaryOperationAST
-    {
-        public BinRevAST(ASTBase a) : base(a) { }
-        public override string ToString() => $"~{A}";
-        public override void Compile(BinaryWriter writer, CompilerArgs args) =>
-            CompileA(Bytecode.BinRev, writer, args);
-    }
+        public SingleBytecodeUnOpAST(ASTBase a, Bytecode bc, string op) : base(a)
+        {
+            Byte = bc;
+            Operator = op;
+        }
 
-    public class NotAST : UnaryOperationAST
-    {
-        public NotAST(ASTBase a) : base(a) { }
-        public override string ToString() => $"!{A}";
         public override void Compile(BinaryWriter writer, CompilerArgs args) =>
-            CompileA(Bytecode.Not, writer, args);
-    }
+            CompileA(Byte, writer, args);
 
-    public class GetTypeAST : UnaryOperationAST
-    {
-        public GetTypeAST(ASTBase a) : base(a) { }
-        public override string ToString() => $"typeof {A}";
-        public override void Compile(BinaryWriter writer, CompilerArgs args) =>
-            CompileA(Bytecode.GetTypeObj, writer, args);
+        public override string ToString() => $"{Operator} {A}";
     }
 
     public class GetNameAST : UnaryOperationAST
@@ -69,13 +53,5 @@ namespace NetScript.Compilation.AST
             writer.Write(Bytecode.PushName);
             writer.Write(args.GetNameID((A as GetVariableAST)?.Name ?? string.Empty));
         }
-    }
-
-    public class DefaultAST : UnaryOperationAST
-    {
-        public DefaultAST(ASTBase a) : base(a) { }
-        public override string ToString() => $"default {A}";
-        public override void Compile(BinaryWriter writer, CompilerArgs args) =>
-            CompileA(Bytecode.Default, writer, args);
     }
 }

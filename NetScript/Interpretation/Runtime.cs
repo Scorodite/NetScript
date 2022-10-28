@@ -6,7 +6,6 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Threading.Tasks;
-using NetScript.Core;
 
 namespace NetScript.Interpretation
 {

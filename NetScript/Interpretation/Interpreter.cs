@@ -5,7 +5,6 @@ using System.Dynamic;
 using System.Text;
 using System.Collections.Generic;
 using System.Reflection;
-using NetScript.Core;
 
 namespace NetScript.Interpretation
 {
