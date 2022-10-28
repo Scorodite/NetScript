@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NetScript.Desktop": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\jma\\Desktop\\анапа\\patriotic.ns"
+    }
+  }
+}
