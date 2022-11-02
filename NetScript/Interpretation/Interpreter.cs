@@ -13,22 +13,28 @@ namespace NetScript.Interpretation
     /// </summary>
     public static class Interpreter
     {
-        public static VariableCollection Interpret(Stream stream)
+        public static VariableCollection Interpret(Stream stream) =>
+            Interpret(stream, CancellationToken.None);
+
+        public static VariableCollection Interpret(Stream stream, CancellationToken token)
         {
             Runtime p = new(stream);
 
-            Execute(p);
+            Execute(p, token);
             
             return p.Last().Variables;
         }
 
-        public static void Execute(Runtime p)
+        public static void Execute(Runtime p) =>
+            Execute(p, CancellationToken.None);
+
+        public static void Execute(Runtime p, CancellationToken token)
         {
             while (p.Count > 0)
             {
                 try
                 {
-                    ExecuteUnsafe(p);
+                    ExecuteUnsafe(p, token);
                     break;
                 }
                 catch (Exception _ex)
@@ -42,6 +48,8 @@ namespace NetScript.Interpretation
                     }
                 }
             }
+
+            token.ThrowIfCancellationRequested();
         }
 
         private static Exception CreateTraceback(Runtime p, Exception ex)
@@ -62,10 +70,15 @@ namespace NetScript.Interpretation
                 traceback.ToString(), ex is InterpreterException && ex.InnerException is Exception inner ? inner : ex);
         }
 
-        private static void ExecuteUnsafe(Runtime p)
+        private static void ExecuteUnsafe(Runtime p, CancellationToken token)
         {
             for (;;)
             {
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 while (p.IsEnd)
                 {
                     if (!p.ContextAvariable)

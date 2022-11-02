@@ -153,7 +153,10 @@ namespace NetScript.Interpretation
 
     public abstract class InvokableFunction : Function
     {
-        public abstract object? Invoke(object?[]? args, Type[]? generics);
+        public abstract object? Invoke(object?[]? args, Type[]? generics, CancellationToken token);
+
+        public object? Invoke(object?[]? args, Type[]? generics) =>
+            Invoke(args, generics, CancellationToken.None);
     }
 
     public class CustomFunction : InvokableFunction
@@ -204,12 +207,12 @@ namespace NetScript.Interpretation
             return new(new Context(Name, new ByteArrayReader(Code)) { Variables = vars, Parent = Package.Current, Type = ContextType.Function });
         }
 
-        public override object? Invoke(object?[]? args, Type[]? generics)
+        public override object? Invoke(object?[]? args, Type[]? generics, CancellationToken token)
         {
             Context cont = (Context)GetResult(args, generics).Value;
             Runtime clone = Package.Clone();
             clone.Add(cont);
-            Interpreter.Execute(clone);
+            Interpreter.Execute(clone, token);
             return cont.Return;
         }
     }
@@ -243,7 +246,7 @@ namespace NetScript.Interpretation
             }
         }
 
-        public override object? Invoke(object?[]? args, Type[]? generics)
+        public override object? Invoke(object?[]? args, Type[]? generics, CancellationToken token)
         {
             if (generics is not null && generics.Length != 0)
             {
@@ -251,7 +254,7 @@ namespace NetScript.Interpretation
             }
             if (Base is CustomFunction custom)
             {
-                return custom.Invoke(args, Generics);
+                return custom.Invoke(args, Generics, token);
             }
             else
             {

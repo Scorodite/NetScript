@@ -17,7 +17,7 @@ namespace NetScript.Editor
         private string Path { get; set; }
         private ConsoleTextBox IOBox { get; }
         //private Compiler Compiler { get; }
-        private CancellationTokenSource Canceler { get; }
+        private CancellationTokenSource? Canceler { get; set; }
         private Task<(TimeSpan, Exception?)>? Execution { get; set; }
 
         public Form1() : this(null) { }
@@ -27,8 +27,6 @@ namespace NetScript.Editor
             InitializeComponent();
 
             Path = string.Empty;
-            //Compiler = new();
-            Canceler = new();
             splitContainer1.Panel2.Controls.Add(IOBox = new ConsoleTextBox() { Dock = DockStyle.Fill });
 
             Editor.AddStyle(Error);
@@ -125,7 +123,7 @@ namespace NetScript.Editor
 
             if (Execution is not null && !Execution.IsCompleted)
             {
-                Canceler.Cancel();
+                Canceler?.Cancel();
             }
 
             try
@@ -160,13 +158,15 @@ namespace NetScript.Editor
                 return;
             }
 
+            Canceler = new();
+
             Execution = Task.Run(() =>
             {
                 DateTime execBegin = DateTime.Now;
                 Exception? exception = null;
                 try
                 {
-                    Interpreter.Interpret(memory);
+                    Interpreter.Interpret(memory, Canceler?.Token ?? default);
                 }
                 catch (Exception ex)
                 {
@@ -200,13 +200,17 @@ namespace NetScript.Editor
                         IOBox.WriteLine(Execution.Result.Item2.ToString());
                     }
                 }
+                else if (Execution.IsCanceled)
+                {
+                    IOBox.WriteLine($"Execution was canceled");
+                }
                 Execution = null;
             }
         }
 
         private void Cancel_Click(object sender, EventArgs e)
         {
-            Canceler.Cancel();
+            Canceler?.Cancel();
         }
     }
 
