@@ -257,16 +257,15 @@ namespace NetScript.Compilation
             WriteBytecode(memory, output, args);
         }
 
-        public virtual void Compile(string[] files, Stream output)
+        public virtual void Compile(string[] codes, Stream output)
         {
             using MemoryStream memory = new();
             using BinaryWriter writer = new(memory);
 
             CompilerArgs args = new();
 
-            foreach (string file in files)
+            foreach (string code in codes)
             {
-                string code = File.ReadAllText(file);
                 List<Token> tokens = Lexer.LexString(code, Expressions);
                 ASTBase[] asts = GetASTs(tokens);
 

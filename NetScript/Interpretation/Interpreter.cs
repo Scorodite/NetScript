@@ -79,7 +79,7 @@ namespace NetScript.Interpretation
                     return;
                 }
 
-                while (p.IsEnd)
+                if (p.IsEnd)
                 {
                     if (!p.ContextAvariable)
                     {
@@ -97,6 +97,7 @@ namespace NetScript.Interpretation
                         }
                         p.RemoveLast();
                     }
+                    continue;
                 }
 
                 Bytecode bc = p.Reader.ReadBytecode();
