@@ -8,7 +8,7 @@
             {
                 Directory.SetCurrentDirectory(dir);
             }
-            NS.Run(args);
+            NS.Run((from a in args select File.ReadAllText(a)).ToArray());
         }
     }
 }

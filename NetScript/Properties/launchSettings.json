@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "NetScript.Desktop": {
+    "NetScript": {
       "commandName": "Project"
     }
   }
